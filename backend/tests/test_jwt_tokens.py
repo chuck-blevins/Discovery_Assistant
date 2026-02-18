@@ -12,7 +12,7 @@ Acceptance Criteria:
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 import os
 from app.utils.security import create_access_token, decode_token
@@ -86,14 +86,14 @@ class TestJWTTokenCreation:
         """create_access_token() should include exp claim (30 days from now)."""
         user_id = uuid4()
         email = "test@example.com"
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         token = create_access_token(user_id, email)
         decoded = decode_token(token)
         
         assert 'exp' in decoded, "Token payload must include exp claim"
         # exp should be ~30 days from now
-        exp_time = datetime.utcfromtimestamp(decoded['exp'])
+        exp_time = datetime.fromtimestamp(decoded['exp'], timezone.utc)
         expected_time = now + timedelta(days=30)
         # Allow 60 second variance
         time_diff = abs((exp_time - expected_time).total_seconds())
@@ -216,7 +216,7 @@ class TestJWTTokenValidation:
         payload = {
             'user_id': str(user_id),
             'email': email,
-            'exp': int((datetime.utcnow() - timedelta(days=365)).timestamp())
+            'exp': int((datetime.now(timezone.utc) - timedelta(days=365)).timestamp())
         }
         
         expired_token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
