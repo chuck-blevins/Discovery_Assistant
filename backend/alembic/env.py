@@ -1,4 +1,12 @@
-"""Alembic environment configuration."""
+"""Alembic environment configuration for Discovery_app.
+
+This file configures Alembic to discover the application's SQLAlchemy
+`Base.metadata` and to run migrations against the database URL taken from
+the `DATABASE_URL` environment variable.
+"""
+
+from __future__ import annotations
+
 import os
 import sys
 from logging.config import fileConfig
@@ -9,34 +17,30 @@ from sqlalchemy import pool
 
 from alembic import context
 
-# Add the backend directory to Python path so we can import app
+# Make backend package importable when running inside containers
 backend_dir = str(Path(__file__).parent.parent)
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-# Import the Base metadata from app
-from app.db import Base
+# Import Base metadata from the app
+from app.db import Base  # type: ignore
 
-# this is the Alembic Config object
+# Alembic config
 config = context.config
-
-# Interpret the config file for Python logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Get database URL from environment
+# Read DB URL from env and set it for Alembic
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://postgres:password123@localhost:5432/discovery_app",
 )
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
-# Set target metadata for autogenerate support
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode (generate SQL without DB connection)."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -50,7 +54,6 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode (connect to DB and apply)."""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
