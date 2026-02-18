@@ -1,2 +1,58 @@
+# Python virtual environments
+venv/
+backend/venv/
+.env
+backend/.env
+.env.*
+
+# Bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Type-check / lint caches
+.mypy_cache/
+.pyright/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# IDEs / editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs, runtime files, local DBs
+*.log
+*.sqlite3
+*.db
+
+# Secrets / keys / certs
+*.pem
+*.key
+*.crt
+secrets.json
+
+# Node
+node_modules/
+
+# BMAD / generated outputs
+_bmad-output/
+
+# Misc
+*.env.local
 backend/.env
 .DS_Store
