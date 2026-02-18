@@ -27,5 +27,18 @@ services:
     volumes:
       - ./backend:/app
 
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: "no"
+    depends_on:
+      - db
+    env_file:
+      - backend/.env
+    command: ["alembic", "upgrade", "head"]
+    volumes:
+      - ./backend:/app
+
 volumes:
   db-data:

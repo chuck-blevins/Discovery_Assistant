@@ -56,3 +56,6 @@ _bmad-output/
 *.env.local
 backend/.env
 .DS_Store
+
+# Allow committed safe env sample
+!backend/.env.sample
