@@ -14,8 +14,6 @@ This file configures Alembic to discover the application's SQLAlchemy
 the `DATABASE_URL` environment variable.
 """
 
-from __future__ import annotations
-
 import os
 import sys
 from logging.config import fileConfig
