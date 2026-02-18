@@ -55,14 +55,24 @@ FastAPI middleware stack order:
 """
 
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.auth import router as auth_router
 
 # Create FastAPI application
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+  print("🚀 Discovery App API starting up...")
+  # Could initialize database connections, load configs, etc.
+  yield
+  print("🛑 Discovery App API shutting down...")
+
+
 app = FastAPI(
-    title="Discovery App API",
-    description="AI-powered discovery platform for validating startup assumptions",
-    version="0.1.0",
+  title="Discovery App API",
+  description="AI-powered discovery platform for validating startup assumptions",
+  version="0.1.0",
+  lifespan=lifespan,
 )
 
 # ============================================================================
@@ -128,15 +138,4 @@ async def read_root():
 # STARTUP AND SHUTDOWN EVENTS
 # ============================================================================
 
-@app.on_event("startup")
-async def startup_event():
-    """Called when FastAPI application starts."""
-    print("🚀 Discovery App API starting up...")
-    # Could initialize database connections, load configs, etc.
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Called when FastAPI application shuts down."""
-    print("🛑 Discovery App API shutting down...")
-    # Could clean up resources, close connections, etc.
+# Startup/shutdown are handled by the `lifespan` context manager above.

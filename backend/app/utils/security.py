@@ -83,7 +83,7 @@ Unicode Support:
 
 import bcrypt
 from typing import Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 import os
 from jose import jwt, JWTError
@@ -544,8 +544,8 @@ def create_access_token(user_id: UUID, email: str) -> str:
     - Can be rate-limited if needed (login attempts)
     """
     try:
-        # Calculate expiration time (30 days from now)
-        expire = datetime.utcnow() + timedelta(days=TOKEN_EXPIRE_DAYS)
+        # Calculate expiration time (30 days from now) as timezone-aware UTC
+        expire = datetime.now(timezone.utc) + timedelta(days=TOKEN_EXPIRE_DAYS)
         
         # Prepare token payload with claims
         # Claims are properties/attributes of the token that contain user information
