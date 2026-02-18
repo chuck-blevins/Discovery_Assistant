@@ -22,6 +22,8 @@ services:
       - db
     env_file:
       - backend/.env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/discovery_app
     ports:
       - "8000:8000"
     volumes:
@@ -36,6 +38,8 @@ services:
       - db
     env_file:
       - backend/.env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/discovery_app
     command: ["alembic", "upgrade", "head"]
     volumes:
       - ./backend:/app

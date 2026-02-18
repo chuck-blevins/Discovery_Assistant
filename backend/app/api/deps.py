@@ -64,7 +64,7 @@ Key practices:
 """
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.utils.security import decode_token, ExpiredTokenError, InvalidTokenError
 from app.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,7 +78,7 @@ security_scheme = HTTPBearer(auto_error=False)
 
 
 async def get_token_from_header(
-    credentials: Optional[HTTPAuthCredentials] = Depends(security_scheme),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
 ) -> str:
     """
     Extract JWT token from HTTP Authorization header.
