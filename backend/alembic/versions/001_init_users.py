@@ -167,7 +167,6 @@ def upgrade() -> None:
             sa.String(255),
             nullable=False,
             unique=True,
-            index=True
         ),
         
         # COLUMN 3: password_hash (Encrypted Password)
