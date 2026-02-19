@@ -58,6 +58,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.auth import router as auth_router
+from app.schemas.auth import HealthResponse
 
 # Create FastAPI application
 @asynccontextmanager
@@ -110,6 +111,12 @@ app.include_router(auth_router)
 # ============================================================================
 # ROOT ENDPOINT
 # ============================================================================
+
+@app.get("/health", response_model=HealthResponse, tags=["health"])
+async def health_check() -> HealthResponse:
+    """Health check endpoint for Docker and monitoring. No auth required."""
+    return HealthResponse(status="ok")
+
 
 @app.get("/", tags=["root"])
 async def read_root():
