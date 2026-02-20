@@ -1,0 +1,107 @@
+import { cn } from '@/lib/utils'
+import { useSidebarStore } from '@/stores/useSidebarStore'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { LayoutDashboard, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+
+export function ClientSidebar() {
+  const collapsed = useSidebarStore((s) => s.collapsed)
+  const toggle = useSidebarStore((s) => s.toggle)
+
+  return (
+    <aside
+      className={cn(
+        'hidden md:flex flex-col h-full bg-zinc-900 text-zinc-100 flex-shrink-0 transition-all duration-200 motion-reduce:transition-none',
+        collapsed ? 'w-16' : 'w-60'
+      )}
+    >
+      {/* Wordmark */}
+      <div className="flex items-center h-16 px-4 border-b border-zinc-800">
+        <LayoutDashboard className="w-5 h-5 shrink-0 text-zinc-300" aria-hidden="true" />
+        {!collapsed && (
+          <span className="ml-3 font-semibold text-zinc-50 truncate">Discovery</span>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <nav aria-label="Main navigation" className="flex-1 overflow-y-auto py-4">
+        <ul className="space-y-1 px-2">
+          <li>
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={cn(
+                      'flex items-center justify-center w-full rounded p-2',
+                      'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
+                    )}
+                    aria-label="All Clients"
+                  >
+                    <LayoutDashboard className="w-5 h-5 text-zinc-300" aria-hidden="true" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">All Clients</TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                className={cn(
+                  'flex items-center w-full rounded px-3 py-2 text-sm',
+                  'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
+                )}
+              >
+                <LayoutDashboard className="w-4 h-4 mr-3 text-zinc-300 shrink-0" aria-hidden="true" />
+                <span className="text-zinc-200">All Clients</span>
+              </button>
+            )}
+          </li>
+        </ul>
+      </nav>
+
+      {/* Footer: collapse toggle + new client */}
+      <div className="border-t border-zinc-800 p-2 space-y-1">
+        {/* New Client button */}
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                className={cn(
+                  'flex items-center justify-center w-full rounded p-2',
+                  'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
+                )}
+                aria-label="New Client"
+              >
+                <Plus className="w-5 h-5 text-zinc-300" aria-hidden="true" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">New Client</TooltipContent>
+          </Tooltip>
+        ) : (
+          <button
+            className={cn(
+              'flex items-center w-full rounded px-3 py-2 text-sm',
+              'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
+            )}
+          >
+            <Plus className="w-4 h-4 mr-3 text-zinc-300 shrink-0" aria-hidden="true" />
+            <span className="text-zinc-200">New Client</span>
+          </button>
+        )}
+
+        {/* Collapse toggle */}
+        <button
+          onClick={toggle}
+          className={cn(
+            'flex items-center justify-center w-full rounded p-2',
+            'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
+          )}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4 text-zinc-400" aria-hidden="true" />
+          ) : (
+            <ChevronLeft className="w-4 h-4 text-zinc-400" aria-hidden="true" />
+          )}
+        </button>
+      </div>
+    </aside>
+  )
+}
