@@ -9,8 +9,10 @@ Routes:
   - GET /health - Public health check
 """
 
+import os
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from uuid import uuid4
+from sqlalchemy.exc import IntegrityError
 
 from app.schemas.auth import (
     SignupRequest, SignupResponse,
@@ -128,11 +130,11 @@ async def signup(
     try:
         # Hash password before storing
         password_hash = hash_password(request.password)
-        
-        # Create user object
+
+        # Create user object — normalize email to lowercase (AC14)
         user = User(
             id=uuid4(),
-            email=request.email,
+            email=request.email.lower(),
             password_hash=password_hash,
         )
         
@@ -265,9 +267,9 @@ async def login(
     - SameSite=Lax prevents CSRF attacks
       * Token cannot be sent from attacker's website
     """
-    # Query user by email
+    # Query user by email — normalize to lowercase for case-insensitive lookup (AC14)
     from sqlalchemy import select
-    stmt = select(User).where(User.email == request.email)
+    stmt = select(User).where(User.email == request.email.lower())
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     
@@ -283,15 +285,16 @@ async def login(
     # Create JWT token valid for 30 days
     access_token = create_access_token(user.id, user.email)
     
-    # Set HTTP-only cookie
-    # Secure=True and SameSite="lax" should be default in production
+    # Set HTTP-only cookie — secure flag on in production (AC3)
+    is_production = os.getenv("ENVIRONMENT", "development") == "production"
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
+        secure=is_production,
         max_age=30 * 24 * 60 * 60,  # 30 days in seconds
         samesite="lax",
-        # In production, also add: secure=True (HTTPS only)
+        path="/",
     )
     
     # Return token in response body (for flexibility)

@@ -63,7 +63,7 @@ Key practices:
 6. Log failed authentication attempts (for security monitoring)
 """
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.utils.security import decode_token, ExpiredTokenError, InvalidTokenError
 from app.db import get_db
@@ -77,7 +77,8 @@ from typing import Optional
 security_scheme = HTTPBearer(auto_error=False)
 
 
-async def get_token_from_header(
+async def get_token_from_request(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
 ) -> str:
     """
@@ -200,18 +201,24 @@ async def get_token_from_header(
     HTTPS is required in production to encrypt token in transit.
     Without HTTPS, tokens can be intercepted and replayed.
     """
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing or invalid authorization header",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    return credentials.credentials
+    # Authorization header takes priority
+    if credentials:
+        return credentials.credentials
+
+    # Fall back to HTTP-only cookie (set by /auth/login)
+    token = request.cookies.get("access_token")
+    if token:
+        return token
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Missing or invalid authorization header",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 async def get_current_user(
-    token: str = Depends(get_token_from_header),
+    token: str = Depends(get_token_from_request),
     db: AsyncSession = Depends(get_db),
 ):
     """
