@@ -58,6 +58,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.auth import router as auth_router
+from app.api.routes.clients import router as clients_router
 from app.schemas.auth import HealthResponse
 
 # Create FastAPI application
@@ -103,9 +104,13 @@ app.add_middleware(
 # Routes will be: /auth/signup, /auth/login, /auth/validate, /auth/logout, /health
 app.include_router(auth_router)
 
+# Include client management routes
+# Routes will be: /clients, /clients/{id}, /clients/{id}/archive
+app.include_router(clients_router)
+
 # Future routes:
-# app.include_router(queries_router, prefix="/queries")
-# app.include_router(analytics_router, prefix="/analytics")
+# app.include_router(projects_router)
+# app.include_router(analytics_router)
 
 
 # ============================================================================
