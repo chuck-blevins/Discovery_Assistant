@@ -8,14 +8,29 @@ export interface ClientResponse {
   id: string
   user_id: string
   name: string
+  description: string | null
   market_type: string | null
-  problem_statement: string | null
-  solution_description: string | null
-  market_notes: string | null
+  assumed_problem: string | null
+  assumed_solution: string | null
+  assumed_market: string | null
+  initial_notes: string | null
   status: 'active' | 'archived'
   created_at: string
   updated_at: string
+  archived_at: string | null
 }
+
+export interface ClientCreate {
+  name: string
+  description?: string
+  market_type?: string
+  assumed_problem?: string
+  assumed_solution?: string
+  assumed_market?: string
+  initial_notes?: string
+}
+
+export type ClientUpdate = Partial<ClientCreate>
 
 export interface ProjectResponse {
   id: string
