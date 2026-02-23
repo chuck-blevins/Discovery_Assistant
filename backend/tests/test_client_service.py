@@ -121,6 +121,9 @@ class TestDeleteClient:
         from app.services.client_service import delete_client
 
         db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None  # no existing projects
+        db.execute.return_value = mock_result
         client = MagicMock()
 
         await delete_client(db, client)

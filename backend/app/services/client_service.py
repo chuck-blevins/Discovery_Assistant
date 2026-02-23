@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.client import Client
+from app.models.project import Project
 from app.schemas.client import ClientCreate, ClientUpdate
 
 
@@ -97,16 +98,11 @@ async def delete_client(
     db: AsyncSession,
     client: Client,
 ) -> None:
-    """Hard-delete client. Raises ValueError if client has related projects.
-
-    NOTE: Project existence check will be fully enforced once the projects
-    table is created in Story 2-3. Until then the check is a no-op.
-    """
-    # TODO (Story 2-3): Uncomment once projects table exists.
-    # from app.models.project import Project
-    # stmt = select(Project).where(Project.client_id == client.id).limit(1)
-    # result = await db.execute(stmt)
-    # if result.scalar_one_or_none():
-    #     raise ValueError("Client has existing projects")
+    """Hard-delete client. Raises ValueError if client has existing projects."""
+    result = await db.execute(
+        select(Project).where(Project.client_id == client.id).limit(1)
+    )
+    if result.scalar_one_or_none() is not None:
+        raise ValueError("Cannot delete client with existing projects")
     await db.delete(client)
     await db.commit()
