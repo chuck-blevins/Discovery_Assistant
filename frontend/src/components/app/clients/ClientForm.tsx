@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -30,10 +31,11 @@ interface ClientFormProps {
 
 interface FormState {
   name: string
+  description: string
   market_type: string
 }
 
-const emptyForm: FormState = { name: '', market_type: '' }
+const emptyForm: FormState = { name: '', description: '', market_type: '' }
 
 export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
   const isEdit = Boolean(client)
@@ -49,7 +51,7 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
     if (open) {
       setForm(
         client
-          ? { name: client.name, market_type: client.market_type ?? '' }
+          ? { name: client.name, description: client.description ?? '', market_type: client.market_type ?? '' }
           : emptyForm
       )
       setNameError(null)
@@ -77,6 +79,7 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
 
     const payload = {
       name: form.name.trim(),
+      ...(form.description.trim() ? { description: form.description.trim() } : {}),
       ...(form.market_type ? { market_type: form.market_type } : {}),
     }
 
@@ -89,11 +92,7 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
       handleClose(false)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong'
-      if (msg === 'A client with that name already exists') {
-        setNameError(msg)
-      } else {
-        setNameError(msg)
-      }
+      setNameError(msg)
     }
   }
 
@@ -125,6 +124,19 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
                   {nameError}
                 </p>
               )}
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1">
+              <Label htmlFor="client-description">Description</Label>
+              <Textarea
+                id="client-description"
+                value={form.description}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="Brief description of the client…"
+                rows={3}
+                disabled={isPending}
+              />
             </div>
 
             {/* Market Type */}

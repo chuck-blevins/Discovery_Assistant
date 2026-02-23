@@ -1,11 +1,13 @@
 import { cn } from '@/lib/utils'
 import { useSidebarStore } from '@/stores/useSidebarStore'
+import { useClientFormStore } from '@/stores/useClientFormStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { LayoutDashboard, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 
 export function ClientSidebar() {
   const collapsed = useSidebarStore((s) => s.collapsed)
   const toggle = useSidebarStore((s) => s.toggle)
+  const openCreate = useClientFormStore((s) => s.openCreate)
 
   return (
     <aside
@@ -63,6 +65,7 @@ export function ClientSidebar() {
           <Tooltip>
             <TooltipTrigger asChild>
               <button
+                onClick={openCreate}
                 className={cn(
                   'flex items-center justify-center w-full rounded p-2',
                   'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
@@ -76,6 +79,7 @@ export function ClientSidebar() {
           </Tooltip>
         ) : (
           <button
+            onClick={openCreate}
             className={cn(
               'flex items-center w-full rounded px-3 py-2 text-sm',
               'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
