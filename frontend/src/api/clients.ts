@@ -18,6 +18,10 @@ export async function archiveClient(id: string): Promise<ClientResponse> {
   return api.patch<ClientResponse>(`/clients/${id}/archive`)
 }
 
+export async function getClient(id: string): Promise<ClientResponse> {
+  return api.get<ClientResponse>(`/clients/${id}`)
+}
+
 export async function deleteClient(id: string): Promise<void> {
   return api.delete<void>(`/clients/${id}`)
 }

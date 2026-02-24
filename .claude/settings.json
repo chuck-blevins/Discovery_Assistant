@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test -- --run --reporter=verbose)",
+      "Bash(npm test -- --run --reporter=verbose src/tests/components/projects/ProjectTable.test.tsx)",
+      "Bash(npm test -- --run src/tests/components/projects/ProjectTable.test.tsx)",
+      "Bash(npm test -- --run src/tests/components/projects/ProjectForm.test.tsx)"
+    ]
+  }
+}
