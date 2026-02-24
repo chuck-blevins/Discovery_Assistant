@@ -54,21 +54,33 @@ FastAPI middleware stack order:
   Client Response
 """
 
+import logging
+import os
+
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.auth import router as auth_router
 from app.api.routes.clients import router as clients_router
 from app.api.routes.projects import router as projects_router
+from app.api.routes.data_sources import router as data_sources_router
 from app.schemas.auth import HealthResponse
+from app.services import storage_service
+
+logger = logging.getLogger(__name__)
 
 # Create FastAPI application
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-  print("🚀 Discovery App API starting up...")
-  # Could initialize database connections, load configs, etc.
-  yield
-  print("🛑 Discovery App API shutting down...")
+    print("🚀 Discovery App API starting up...")
+    # Initialize object storage bucket (best-effort — tests may run without MinIO)
+    bucket = os.getenv("STORAGE_BUCKET_NAME", "discovery-files")
+    try:
+        storage_service.ensure_bucket_exists(bucket)
+    except Exception as exc:
+        logger.warning("Storage bucket init failed (continuing without it): %s", exc)
+    yield
+    print("🛑 Discovery App API shutting down...")
 
 
 app = FastAPI(
@@ -112,6 +124,11 @@ app.include_router(clients_router)
 # Include project management routes (uses explicit full paths — no prefix needed)
 # Routes: /clients/{id}/projects, /projects/{id}, /projects/{id}/archive
 app.include_router(projects_router)
+
+# Include data source routes (uses explicit full paths — no prefix needed)
+# Routes: /projects/{id}/data-sources/upload, /projects/{id}/data-sources/paste,
+#         /projects/{id}/data-sources, /data-sources/{id}/preview, /data-sources/{id}
+app.include_router(data_sources_router)
 
 # Future routes:
 # app.include_router(analytics_router)

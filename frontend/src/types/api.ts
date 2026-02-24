@@ -43,7 +43,16 @@ export interface ProjectResponse {
   last_analyzed_at: string | null
   created_at: string
   updated_at: string
+  archived_at: string | null
 }
+
+export interface ProjectCreate {
+  name: string
+  objective: 'problem-validation' | 'positioning' | 'persona-buildout' | 'icp-refinement'
+  target_segments?: string[]
+}
+
+export type ProjectUpdate = Partial<ProjectCreate>
 
 export type ConfidenceState = 'none' | 'red' | 'amber' | 'green'
 

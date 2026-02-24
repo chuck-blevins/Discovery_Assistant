@@ -4,11 +4,20 @@ import {
   archiveClient,
   createClient,
   deleteClient,
+  getClient,
   listClients,
   updateClient,
 } from '@/api/clients'
 import { queryKeys } from '@/lib/queryKeys'
 import type { ClientCreate, ClientUpdate } from '@/types/api'
+
+export function useClient(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.clients.detail(id ?? ''),
+    queryFn: () => getClient(id!),
+    enabled: Boolean(id),
+  })
+}
 
 export function useClients(includeArchived = false) {
   return useQuery({
