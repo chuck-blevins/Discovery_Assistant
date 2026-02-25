@@ -30,7 +30,10 @@ CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
 _CLAUDE_TIMEOUT = float(os.getenv("CLAUDE_REQUEST_TIMEOUT", "180"))
 
 # Module-level singleton — avoids re-creating the HTTP client on every analysis call
+# Use CLAUDE_API_KEY (app .env) or ANTHROPIC_API_KEY (SDK default) so Docker/env works
+_api_key = os.getenv("CLAUDE_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
 _client = anthropic.AsyncAnthropic(
+    api_key=_api_key,
     http_client=httpx.AsyncClient(timeout=_CLAUDE_TIMEOUT),
 )
 
