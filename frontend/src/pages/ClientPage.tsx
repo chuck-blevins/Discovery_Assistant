@@ -28,7 +28,12 @@ export default function ClientPage() {
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">{client.name}</h1>
-          {client.status === 'archived' && <Badge variant="outline">Archived</Badge>}
+          <Badge
+            variant="outline"
+            className={client.status === 'archived' ? 'bg-gray-100 text-gray-600 border-gray-300' : 'bg-green-100 text-green-800 border-green-300'}
+          >
+            {client.status === 'archived' ? 'Archived' : 'Active'}
+          </Badge>
         </div>
         {client.market_type && (
           <p className="text-muted-foreground">{client.market_type}</p>

@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -46,7 +47,12 @@ export default function ProjectPage() {
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-bold">{project.name}</h1>
           <Badge variant="outline">{OBJECTIVE_LABELS[project.objective]}</Badge>
-          {project.status === 'archived' && <Badge variant="outline">Archived</Badge>}
+          <Badge
+            variant="outline"
+            className={project.status === 'archived' ? 'bg-gray-100 text-gray-600 border-gray-300' : 'bg-green-100 text-green-800 border-green-300'}
+          >
+            {project.status === 'archived' ? 'Archived' : 'Active'}
+          </Badge>
         </div>
         {project.target_segments.length > 0 && (
           <p className="text-muted-foreground mt-1">
@@ -74,9 +80,20 @@ export default function ProjectPage() {
       <section aria-label="Analysis" className="mt-6">
         <h2 className="text-lg font-semibold mb-2">Analysis</h2>
         <div className="hidden md:block">
-          <Button asChild disabled={!hasDataSources}>
-            <Link to={`/${clientId}/${projectId}/analyze`}>Analyze</Link>
-          </Button>
+          {hasDataSources ? (
+            <Button asChild>
+              <Link to={`/${clientId}/${projectId}/analyze`} state={{ autoStart: true }}>
+                Analyze
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={() => toast.error('At least one document must be available for analysis.')}
+            >
+              Analyze
+            </Button>
+          )}
         </div>
         {!hasDataSources && (
           <p className="text-xs text-muted-foreground mt-2">
