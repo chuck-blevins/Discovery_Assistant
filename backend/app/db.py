@@ -268,5 +268,8 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         try:
             yield session  # Give session to endpoint
         finally:
-            await session.close()  # Clean up (guaranteed to run)
+            # Do not call session.close() here: the async with above closes the session
+            # on exit. Explicit close() can race with response serialization (lazy loads)
+            # and cause IllegalStateChangeError.
+            pass
 

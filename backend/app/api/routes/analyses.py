@@ -147,11 +147,11 @@ async def stream_analysis(
         )
 
     async def event_generator() -> AsyncGenerator[str, None]:
-        from app.db import async_session_maker  # local import to avoid circular
+        from app.db import AsyncSessionLocal  # local import to avoid circular
 
         lock = await _acquire_project_analysis_lock(project_id_val)
         async with lock:
-            async with async_session_maker() as gen_db:
+            async with AsyncSessionLocal() as gen_db:
                 try:
                     yield _sse({"type": "progress", "stage": "Loading data sources", "pct": 10})
                     yield _sse({"type": "progress", "stage": "Parsing documents", "pct": 30})

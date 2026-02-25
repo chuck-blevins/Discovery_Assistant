@@ -69,8 +69,7 @@ async def create_project(
             detail="A project with that name already exists for this client",
         )
     asyncio.create_task(
-        audit_service.log(
-            db,
+        audit_service.log_in_new_session(
             current_user.id,
             "project.created",
             "project",
@@ -228,8 +227,7 @@ async def update_project(
             detail="A project with that name already exists for this client",
         )
     asyncio.create_task(
-        audit_service.log(
-            db,
+        audit_service.log_in_new_session(
             current_user.id,
             "project.updated",
             "project",
@@ -261,8 +259,7 @@ async def toggle_archive(
     audit_action = "project.archived" if project.status == "active" else "project.unarchived"
     project = await project_service.toggle_archive(db, project)
     asyncio.create_task(
-        audit_service.log(
-            db,
+        audit_service.log_in_new_session(
             current_user.id,
             audit_action,
             "project",
@@ -295,8 +292,7 @@ async def delete_project(
     client_id = project.client_id
     await project_service.delete_project(db, project)
     asyncio.create_task(
-        audit_service.log(
-            db,
+        audit_service.log_in_new_session(
             current_user.id,
             "project.deleted",
             "project",
