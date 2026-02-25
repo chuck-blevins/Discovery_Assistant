@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 import { Badge } from '@/components/ui/badge'
 import { TableCell, TableRow } from '@/components/ui/table'
 import type { ClientResponse } from '@/types/api'
@@ -11,7 +13,14 @@ interface ClientRowProps {
 export function ClientRow({ client, onEdit }: ClientRowProps) {
   return (
     <TableRow>
-      <TableCell className="font-medium">{client.name}</TableCell>
+      <TableCell className="font-medium">
+        <Link
+          to={`/${client.id}`}
+          className="text-zinc-900 hover:text-zinc-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 rounded"
+        >
+          {client.name}
+        </Link>
+      </TableCell>
       <TableCell>{client.market_type ?? '—'}</TableCell>
       <TableCell>
         {client.status === 'archived' ? (

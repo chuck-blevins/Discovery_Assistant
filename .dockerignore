@@ -1,0 +1,32 @@
+# Dependencies and env (use env_file or compose env in Docker)
+backend/.venv
+backend/.venv310
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Python
+__pycache__
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+.mypy_cache
+.pytest_cache
+.coverage
+htmlcov
+
+# Frontend (not needed for backend image)
+frontend/node_modules
+frontend/dist
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+*.md
+!backend/README*
+
+# BMAD / docs
+_bmad-output

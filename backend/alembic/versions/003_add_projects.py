@@ -27,7 +27,7 @@ def upgrade() -> None:
             "target_segments",
             postgresql.ARRAY(sa.Text()),
             nullable=False,
-            server_default="'{}'",
+            server_default=sa.text("ARRAY[]::text[]"),
         ),
         sa.Column("status", sa.String(20), nullable=False, server_default="active"),
         sa.Column("confidence_score", sa.Float(), nullable=True),

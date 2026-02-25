@@ -9,8 +9,8 @@ stop:
 	docker compose down
 
 migrate:
-	# Runs Alembic migrations in a one-shot container
-	docker compose run --rm migrate
+	# Runs Alembic migrations in a one-shot container (optional; backend entrypoint also runs migrations)
+	docker compose --profile tools run --rm migrate
 
 logs:
 	docker compose logs -f backend

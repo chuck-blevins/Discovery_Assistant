@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -38,6 +39,7 @@ interface FormState {
 const emptyForm: FormState = { name: '', description: '', market_type: '' }
 
 export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
+  const navigate = useNavigate()
   const isEdit = Boolean(client)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [nameError, setNameError] = useState<string | null>(null)
@@ -86,10 +88,12 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
     try {
       if (isEdit && client) {
         await updateMutation.mutateAsync({ id: client.id, data: payload })
+        handleClose(false)
       } else {
-        await createMutation.mutateAsync(payload)
+        const created = await createMutation.mutateAsync(payload)
+        handleClose(false)
+        navigate(`/${created.id}`)
       }
-      handleClose(false)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong'
       setNameError(msg)

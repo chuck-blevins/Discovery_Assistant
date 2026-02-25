@@ -1,24 +1,25 @@
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (libpq for asyncpg)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
   && rm -rf /var/lib/apt/lists/*
 
-# Copy and install python deps
+# Copy and install Python deps
 COPY backend/requirements.txt /app/requirements.txt
-RUN python -m pip install --upgrade pip
-RUN python -m pip install -r /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+  && pip install --no-cache-dir -r /app/requirements.txt
 
-# Copy application
+# Copy application (includes scripts/docker-entrypoint.sh)
 COPY backend /app
+RUN chmod +x /app/scripts/docker-entrypoint.sh
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]

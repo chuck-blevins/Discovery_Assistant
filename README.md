@@ -1,42 +1,45 @@
-# Discovery_app — Local development
+# Discovery App — Local development
 
-Quick reference for running the backend with Docker and migrations.
+Run the API, Postgres, and MinIO with Docker.
 
-Prerequisites
-- Docker and Docker Compose v2 installed
-- (Optional) Python 3.14 venv for running tests locally
+**Prerequisites:** Docker and Docker Compose v2.
 
-Setup
-1. Copy the environment sample into a real env file:
+**Setup**
 
-   cp backend/.env.sample backend/.env
+1. Copy the env sample and set required values:
 
-2. Edit `backend/.env` and set `SECRET_KEY` (do not commit this file).
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
 
-Common commands (from repo root)
-- Build and start services (detached):
+2. Edit `backend/.env` and set at least:
+   - `SECRET_KEY` (e.g. `openssl rand -hex 32`)
+   - `CLAUDE_API_KEY` (for analysis features)
 
-  make start
+**Deploy with Docker (from repo root)**
 
-- Run Alembic migrations (one-shot service):
+```bash
+make start
+```
 
-  make migrate
+- **API:** http://localhost:8000 (docs: http://localhost:8000/docs)
+- **MinIO console:** http://localhost:9001 (minioadmin / minioadmin)
+- **Postgres:** localhost:5432, user `postgres`, password `postgres`, db `discovery_app`
 
-- Stop and remove services:
+The backend container runs migrations on startup, then starts uvicorn. No need to run `make migrate` unless you use the optional migrate service.
 
-  make stop
+**Commands**
 
-- Follow backend logs:
+| Command   | Description                    |
+|----------|---------------------------------|
+| `make start`  | Build and start all services (detached) |
+| `make stop`   | Stop and remove containers      |
+| `make logs`   | Follow backend logs             |
+| `make migrate`| Run migrations only (optional; profile `tools`) |
+| `make shell`  | Shell into backend container    |
+| `make test`   | Run pytest in backend (local venv) |
 
-  make logs
+**Notes**
 
-- Run tests locally (requires dependencies installed in `backend`):
-
-  make test
-
-Notes
-- The Docker image installs Python dependencies from `backend/requirements.txt`.
-- `backend/requirements.txt` pins `SQLAlchemy==2.0.46` for Python 3.14 compatibility.
-- `docker-compose.yml` includes a `migrate` service that runs `alembic upgrade head`.
-
-If you want, I can also add a small `docs/dev.md` with more detail or set up a CI job to run migrations during deployment.
+- Backend uses Python 3.12 in Docker. Storage (MinIO) is configured via compose; override `CORS_ORIGINS` in `backend/.env` if the frontend runs on a different origin.
+- Frontend: run separately (`cd frontend && npm run dev`). Set `VITE_API_URL=http://localhost:8000` if needed.

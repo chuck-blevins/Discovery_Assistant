@@ -55,8 +55,11 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    # Use DATABASE_URL from env so Docker/compose override works
+    configuration = config.get_section(config.config_ini_section, {})
+    configuration["sqlalchemy.url"] = DATABASE_URL
     connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
         future=True,

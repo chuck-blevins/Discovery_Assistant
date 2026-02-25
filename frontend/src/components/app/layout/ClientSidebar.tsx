@@ -1,3 +1,5 @@
+import { Link, useLocation } from 'react-router-dom'
+
 import { cn } from '@/lib/utils'
 import { useSidebarStore } from '@/stores/useSidebarStore'
 import { useClientFormStore } from '@/stores/useClientFormStore'
@@ -5,9 +7,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { LayoutDashboard, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 
 export function ClientSidebar() {
+  const location = useLocation()
   const collapsed = useSidebarStore((s) => s.collapsed)
   const toggle = useSidebarStore((s) => s.toggle)
   const openCreate = useClientFormStore((s) => s.openCreate)
+  const isDashboard = location.pathname === '/'
 
   return (
     <aside
@@ -31,28 +35,32 @@ export function ClientSidebar() {
             {collapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <Link
+                    to="/"
                     className={cn(
                       'flex items-center justify-center w-full rounded p-2',
-                      'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
+                      'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400',
+                      isDashboard && 'bg-zinc-800'
                     )}
                     aria-label="All Clients"
                   >
                     <LayoutDashboard className="w-5 h-5 text-zinc-300" aria-hidden="true" />
-                  </button>
+                  </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">All Clients</TooltipContent>
               </Tooltip>
             ) : (
-              <button
+              <Link
+                to="/"
                 className={cn(
                   'flex items-center w-full rounded px-3 py-2 text-sm',
-                  'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
+                  'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400',
+                  isDashboard && 'bg-zinc-800'
                 )}
               >
                 <LayoutDashboard className="w-4 h-4 mr-3 text-zinc-300 shrink-0" aria-hidden="true" />
                 <span className="text-zinc-200">All Clients</span>
-              </button>
+              </Link>
             )}
           </li>
         </ul>

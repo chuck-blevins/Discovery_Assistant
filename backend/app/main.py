@@ -97,18 +97,24 @@ app = FastAPI(
 # ============================================================================
 
 # CORS (Cross-Origin Request Sharing) Middleware
-# Allows frontend on different domain to call backend API
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",      # React dev server
-        "http://localhost:5173",       # Vite dev server  
+# Allows frontend on different domain to call backend API.
+# Set CORS_ORIGINS (comma-separated) in env for Docker/production.
+_cors_origins = os.getenv("CORS_ORIGINS")
+if _cors_origins:
+    allow_origins = [o.strip() for o in _cors_origins.split(",") if o.strip()]
+else:
+    allow_origins = [
+        "http://localhost:3000",
+        "http://localhost:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
-    ],
-    allow_credentials=True,            # Allow sending cookies/auth headers
+    ]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allow_origins,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=["*"],               # Allow all headers
+    allow_headers=["*"],
 )
 
 # ============================================================================
