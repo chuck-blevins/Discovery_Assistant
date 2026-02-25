@@ -1,24 +1,30 @@
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getConfidenceColor } from '@/components/app/projects/ConfidenceIndicator'
 import DataSourceSection from '@/components/app/data-sources/DataSourceSection'
+import { IcpCard } from '@/components/app/icp/IcpCard'
+import { PersonaCard } from '@/components/app/persona/PersonaCard'
 import { useDataSources } from '@/hooks/useDataSources'
+import { useIcp } from '@/hooks/useIcp'
+import { usePersona } from '@/hooks/usePersona'
 import { useProject } from '@/hooks/useProjects'
-
-const OBJECTIVE_LABELS: Record<string, string> = {
-  'problem-validation': 'Problem Validation',
-  'positioning': 'Positioning',
-  'persona-buildout': 'Persona Build-out',
-  'icp-refinement': 'ICP Refinement',
-}
+import { OBJECTIVE_LABELS } from '@/lib/constants'
 
 export default function ProjectPage() {
-  const { projectId } = useParams<{ projectId: string }>()
+  const { clientId, projectId } = useParams<{ clientId: string; projectId: string }>()
   const { data: project, isLoading, isError } = useProject(projectId)
-  const { data: dataSources } = useDataSources(projectId ?? '')
+  const { data: dataSources } = useDataSources(projectId)
+  const { data: persona, isLoading: personaLoading } = usePersona(
+    projectId,
+    project?.objective === 'persona-buildout'
+  )
+  const { data: icp, isLoading: icpLoading } = useIcp(
+    projectId,
+    project?.objective === 'icp-refinement'
+  )
   const hasDataSources = (dataSources?.length ?? 0) > 0
 
   if (isLoading) {
@@ -61,19 +67,51 @@ export default function ProjectPage() {
           </p>
         )}
       </div>
-      <section aria-label="Data Sources">
+      <section id="data-sources" aria-label="Data Sources">
         <h2 className="text-lg font-semibold mb-2">Data Sources</h2>
         <DataSourceSection projectId={projectId ?? ''} />
       </section>
       <section aria-label="Analysis" className="mt-6">
         <h2 className="text-lg font-semibold mb-2">Analysis</h2>
-        <Button disabled={!hasDataSources}>Analyze</Button>
+        <div className="hidden md:block">
+          <Button asChild disabled={!hasDataSources}>
+            <Link to={`/${clientId}/${projectId}/analyze`}>Analyze</Link>
+          </Button>
+        </div>
         {!hasDataSources && (
           <p className="text-xs text-muted-foreground mt-2">
             Add at least one data source to run analysis.
           </p>
         )}
       </section>
+
+      {project.objective === 'persona-buildout' && (
+        <section aria-label="Persona" className="mt-6">
+          {personaLoading && <Skeleton className="h-32 w-full" />}
+          {!personaLoading && persona && (
+            <PersonaCard persona={persona} projectName={project.name} />
+          )}
+          {!personaLoading && !persona && (
+            <p className="text-sm text-muted-foreground">
+              No persona yet. Run analysis to generate a persona card.
+            </p>
+          )}
+        </section>
+      )}
+
+      {project.objective === 'icp-refinement' && (
+        <section aria-label="ICP" className="mt-6">
+          {icpLoading && <Skeleton className="h-32 w-full" />}
+          {!icpLoading && icp && (
+            <IcpCard icp={icp} projectName={project.name} />
+          )}
+          {!icpLoading && !icp && (
+            <p className="text-sm text-muted-foreground">
+              No ICP yet. Run analysis to generate an ICP card.
+            </p>
+          )}
+        </section>
+      )}
     </>
   )
 }

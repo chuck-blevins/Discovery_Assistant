@@ -65,6 +65,7 @@ class ProjectResponse(BaseModel):
     status: str
     confidence_score: Optional[float] = None
     last_analyzed_at: Optional[datetime] = None
+    total_cost_usd: Optional[float] = None  # Story 6-3: sum of analyses.cost_usd
     created_at: datetime
     updated_at: datetime
     archived_at: Optional[datetime] = None

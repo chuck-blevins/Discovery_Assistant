@@ -31,7 +31,12 @@ export function ProjectActions({ project, clientId, onEdit }: ProjectActionsProp
       <Button variant="outline" size="sm" onClick={() => navigate(`/${clientId}/${project.id}`)}>
         View
       </Button>
-
+      <Button variant="outline" size="sm" onClick={() => navigate(`/${clientId}/${project.id}#data-sources`)}>
+        Upload
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => navigate(`/${clientId}/${project.id}/analyze`)}>
+        Analyze
+      </Button>
       <Button variant="outline" size="sm" onClick={onEdit}>
         Edit
       </Button>

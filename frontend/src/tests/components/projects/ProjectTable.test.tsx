@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { axe } from 'vitest-axe'
 import { ProjectTable } from '@/components/app/projects/ProjectTable'
+import { renderWithProviders } from '@/tests/utils'
 import { useProjectFormStore } from '@/stores/useProjectFormStore'
 import type { ProjectResponse } from '@/types/api'
 
@@ -38,17 +37,6 @@ const archivedProject: ProjectResponse = {
   name: 'Old Project',
   status: 'archived',
   archived_at: '2026-02-01T00:00:00Z',
-}
-
-function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
-  return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter>{ui}</MemoryRouter>
-    </QueryClientProvider>
-  )
 }
 
 beforeEach(() => {
@@ -104,6 +92,26 @@ describe('ProjectTable', () => {
 
     await waitFor(() => {
       expect(projectsApi.listProjects).toHaveBeenCalledWith('client-1', true)
+    })
+  })
+
+  it('calls archiveProject (toggle) when Unarchive clicked on archived project', async () => {
+    vi.mocked(projectsApi.listProjects).mockResolvedValue([archivedProject])
+    vi.mocked(projectsApi.archiveProject).mockResolvedValue({
+      ...archivedProject,
+      status: 'active',
+      archived_at: null,
+    })
+    renderWithProviders(<ProjectTable clientId="client-1" />)
+    await waitFor(() => {
+      expect(screen.getAllByText('Old Project').length).toBeGreaterThan(0)
+    })
+    // "Unarchive" buttons appear in both desktop and mobile views
+    const unarchiveButtons = screen.getAllByRole('button', { name: /unarchive/i })
+    expect(unarchiveButtons.length).toBeGreaterThan(0)
+    fireEvent.click(unarchiveButtons[0])
+    await waitFor(() => {
+      expect(projectsApi.archiveProject).toHaveBeenCalledWith('proj-2')
     })
   })
 

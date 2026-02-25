@@ -1,20 +1,19 @@
 import { Badge } from '@/components/ui/badge'
 import { TableCell, TableRow } from '@/components/ui/table'
+import { OBJECTIVE_LABELS } from '@/lib/constants'
 import { getConfidenceColor } from './ConfidenceIndicator'
 import { ProjectActions } from './ProjectActions'
 import type { ProjectResponse } from '@/types/api'
-
-const OBJECTIVE_LABELS: Record<string, string> = {
-  'problem-validation': 'Problem Validation',
-  'positioning': 'Positioning',
-  'persona-buildout': 'Persona Build-out',
-  'icp-refinement': 'ICP Refinement',
-}
 
 interface ProjectRowProps {
   project: ProjectResponse
   clientId: string
   onEdit: (project: ProjectResponse) => void
+}
+
+function formatCost(usd: number | null | undefined): string {
+  if (usd == null || Number.isNaN(usd)) return '$0.00'
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(usd)
 }
 
 export function ProjectRow({ project, clientId, onEdit }: ProjectRowProps) {
@@ -31,6 +30,7 @@ export function ProjectRow({ project, clientId, onEdit }: ProjectRowProps) {
         )}
       </TableCell>
       <TableCell>{new Date(project.updated_at).toLocaleDateString()}</TableCell>
+      <TableCell className="tabular-nums">{formatCost(project.total_cost_usd)}</TableCell>
       <TableCell>
         <ProjectActions project={project} clientId={clientId} onEdit={() => onEdit(project)} />
       </TableCell>

@@ -39,7 +39,10 @@ export function useUpdateProject(clientId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: ProjectUpdate }) => updateProject(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.projects.all(clientId) }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.projects.all(clientId) })
+      qc.invalidateQueries({ queryKey: queryKeys.projects.detail(id) })
+    },
   })
 }
 
@@ -47,7 +50,10 @@ export function useArchiveProject(clientId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => archiveProject(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.projects.all(clientId) }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: queryKeys.projects.all(clientId) })
+      qc.invalidateQueries({ queryKey: queryKeys.projects.detail(id) })
+    },
   })
 }
 

@@ -13,16 +13,15 @@ export function getConfidenceColor(score: number | null): string {
 
 interface Props {
   score: number | null
-  className?: string
 }
 
-export function ConfidenceIndicator({ score, className }: Props) {
+export function ConfidenceIndicator({ score }: Props) {
   const color = getConfidenceColor(score)
   const label =
     score !== null ? `${Math.round(score * 100)}% confidence` : 'Not yet analyzed'
   return (
     <div
-      className={`w-1 self-stretch rounded-sm flex-shrink-0 ${className ?? ''}`}
+      className="w-1 self-stretch rounded-sm flex-shrink-0"
       style={{ backgroundColor: color }}
       aria-label={label}
       role="img"

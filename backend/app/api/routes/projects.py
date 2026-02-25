@@ -19,8 +19,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.db import get_db
 from app.models.user import User
+from app.schemas.icp import IcpResponse
+from app.schemas.persona import PersonaResponse
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
-from app.services import audit_service, client_service, project_service
+from app.services import (
+    analysis_service,
+    audit_service,
+    client_service,
+    icp_service,
+    persona_service,
+    project_service,
+)
 
 router = APIRouter(tags=["projects"])
 
@@ -89,7 +98,80 @@ async def list_projects(
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
     projects = await project_service.list_projects(db, client_id, include_archived)
-    return [_project_to_response(p) for p in projects]
+    totals = await analysis_service.get_project_cost_totals(db, [p.id for p in projects])
+    return [
+        _project_to_response(p).model_copy(update={"total_cost_usd": totals.get(p.id, 0.0)})
+        for p in projects
+    ]
+
+
+# ── GET /projects/{project_id}/persona ───────────────────────────────────────── (Story 5-2)
+
+@router.get(
+    "/projects/{project_id}/persona",
+    response_model=PersonaResponse,
+    summary="Get persona for a project (persona-buildout objective)",
+)
+async def get_project_persona(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PersonaResponse:
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    client = await client_service.get_client(db, project.client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    persona = await persona_service.get_persona_by_project(db, project_id)
+    if not persona:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No persona for this project")
+    completion = persona_service.completion_pct(persona)
+    decay = persona_service.staleness_decay_pct(persona.last_analyzed_at)
+    return PersonaResponse(
+        id=persona.id,
+        project_id=persona.project_id,
+        confidence_score=persona.confidence_score,
+        name_title=persona.name_title,
+        goals=persona.goals,
+        pain_points=persona.pain_points,
+        decision_drivers=persona.decision_drivers,
+        false_beliefs=persona.false_beliefs,
+        job_to_be_done=persona.job_to_be_done,
+        usage_patterns=persona.usage_patterns,
+        objections=persona.objections,
+        success_metrics=persona.success_metrics,
+        field_quality=persona.field_quality,
+        completion_pct=completion,
+        staleness_decay_pct=decay,
+        last_analyzed_at=persona.last_analyzed_at,
+        created_at=persona.created_at,
+        updated_at=persona.updated_at,
+    )
+
+
+# ── GET /projects/{project_id}/icp ───────────────────────────────────────────── (Story 5-3)
+
+@router.get(
+    "/projects/{project_id}/icp",
+    response_model=IcpResponse,
+    summary="Get ICP for a project (icp-refinement objective)",
+)
+async def get_project_icp(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> IcpResponse:
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    client = await client_service.get_client(db, project.client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    icp = await icp_service.get_icp_by_project(db, project_id)
+    if not icp:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No ICP for this project")
+    return IcpResponse.model_validate(icp)
 
 
 # ── GET /projects/{project_id} ────────────────────────────────────────────────
@@ -111,7 +193,10 @@ async def get_project(
     client = await client_service.get_client(db, project.client_id, current_user.id)
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-    return _project_to_response(project)
+    totals = await analysis_service.get_project_cost_totals(db, [project.id])
+    return _project_to_response(project).model_copy(
+        update={"total_cost_usd": totals.get(project.id, 0.0)}
+    )
 
 
 # ── PUT /projects/{project_id} ────────────────────────────────────────────────
