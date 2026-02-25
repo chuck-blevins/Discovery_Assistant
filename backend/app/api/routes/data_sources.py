@@ -157,8 +157,7 @@ async def upload_files(
 
         committed.append(ds)
         asyncio.create_task(
-            audit_service.log(
-                db,
+            audit_service.log_in_new_session(
                 current_user.id,
                 "data_source.created",
                 "data_source",
@@ -201,8 +200,7 @@ async def paste_text(
     )
 
     asyncio.create_task(
-        audit_service.log(
-            db,
+        audit_service.log_in_new_session(
             current_user.id,
             "data_source.created",
             "data_source",
@@ -275,8 +273,7 @@ async def delete_data_source(
     await data_source_service.delete_data_source(db, ds)
 
     asyncio.create_task(
-        audit_service.log(
-            db,
+        audit_service.log_in_new_session(
             current_user.id,
             "data_source.deleted",
             "data_source",

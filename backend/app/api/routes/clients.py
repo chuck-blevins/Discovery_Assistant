@@ -47,8 +47,7 @@ async def create_client(
             detail="A client with that name already exists",
         )
     asyncio.create_task(
-        audit_service.log(
-            db,
+        audit_service.log_in_new_session(
             current_user.id,
             "client.created",
             "client",
@@ -119,8 +118,7 @@ async def update_client(
         )
     changed_fields = list(data.model_dump(exclude_none=True).keys())
     asyncio.create_task(
-        audit_service.log(
-            db,
+        audit_service.log_in_new_session(
             current_user.id,
             "client.updated",
             "client",
@@ -149,8 +147,7 @@ async def toggle_archive(
     audit_action = "client.archived" if client.status == "active" else "client.unarchived"
     client = await client_service.toggle_archive(db, client)
     asyncio.create_task(
-        audit_service.log(
-            db,
+        audit_service.log_in_new_session(
             current_user.id,
             audit_action,
             "client",
@@ -185,8 +182,7 @@ async def delete_client(
             detail="Cannot delete client with existing projects",
         )
     asyncio.create_task(
-        audit_service.log(
-            db,
+        audit_service.log_in_new_session(
             current_user.id,
             "client.deleted",
             "client",

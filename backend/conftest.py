@@ -15,6 +15,9 @@ env_file = Path(__file__).parent / '.env'
 if env_file.exists():
     load_dotenv(env_file)
 
+# Disable LangSmith tracing during tests so tests never export traces
+os.environ['LANGSMITH_TRACING'] = 'false'
+
 # Set default SECRET_KEY for tests
 if not os.getenv('SECRET_KEY'):
     os.environ['SECRET_KEY'] = 'test-secret-key-minimum-32-chars'

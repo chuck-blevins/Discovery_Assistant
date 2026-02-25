@@ -4,6 +4,9 @@ Stories 4.1 (SSE streaming infrastructure) and 4.2 (problem validation logic)
 are both implemented here since they share the same Claude call pipeline.
 
 LangSmith: set LANGSMITH_TRACING=true and LANGSMITH_API_KEY in .env to send traces.
+When enabled, full prompt and response content is sent to LangSmith; in
+compliance-sensitive environments, disable tracing or use LangSmith access controls.
+See https://docs.langchain.com/langsmith/annotate-code
 """
 
 import json
@@ -16,6 +19,7 @@ try:
     from langsmith import traceable
 except ImportError:
     def traceable(func=None, **kwargs):
+        """No-op when langsmith is not installed; app runs without tracing."""
         if func is None:
             return lambda f: f
         return func
@@ -26,7 +30,7 @@ CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
 _CLAUDE_TIMEOUT = float(os.getenv("CLAUDE_REQUEST_TIMEOUT", "180"))
 
 # Module-level singleton — avoids re-creating the HTTP client on every analysis call
-# Use CLAUDE_API_KEY (app .env) or ANTHROPIC_API_KEY (SDK default); required for Docker/env.
+# Use CLAUDE_API_KEY (app .env) or ANTHROPIC_API_KEY (SDK default) so Docker/env works
 _api_key = os.getenv("CLAUDE_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
 _client = anthropic.AsyncAnthropic(
     api_key=_api_key,
@@ -244,7 +248,7 @@ async def _invoke_claude(
     model: str | None = None,
     max_tokens: int = 4096,
 ):
-    """Single Claude API call. Traced in LangSmith when LANGSMITH_TRACING=true."""
+    """Single Claude API call. Traced as LLM run in LangSmith when LANGSMITH_TRACING=true."""
     message = await _client.messages.create(
         model=model or CLAUDE_MODEL,
         max_tokens=max_tokens,
@@ -254,6 +258,7 @@ async def _invoke_claude(
     return message
 
 
+@traceable(name="formatPromptProblemValidation")
 def build_problem_validation_prompt(
     objective: str,
     assumed_problem: str | None,
@@ -309,6 +314,7 @@ def build_problem_validation_prompt(
     return "\n".join(parts)
 
 
+@traceable(name="formatPromptPositioning")
 def build_positioning_prompt(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
@@ -344,6 +350,7 @@ def build_positioning_prompt(
     return "\n".join(parts)
 
 
+@traceable(name="formatPromptPersona")
 def build_persona_prompt(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
@@ -376,6 +383,7 @@ def build_persona_prompt(
     return "\n".join(parts)
 
 
+@traceable(name="formatPromptIcp")
 def build_icp_prompt(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
@@ -408,6 +416,7 @@ def build_icp_prompt(
     return "\n".join(parts)
 
 
+@traceable(name="parseOutput")
 def _extract_json(text: str) -> dict:
     """Extract a JSON object from Claude's response.
 
@@ -749,6 +758,7 @@ _RECOMMENDATIONS_REQUIRED_KEYS = {
 }
 
 
+@traceable(name="formatPromptRecommendations")
 def build_recommendations_prompt(
     project_name: str,
     objective: str,

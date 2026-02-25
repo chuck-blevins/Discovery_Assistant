@@ -13,6 +13,28 @@ import pytest
 
 
 # ============================================================================
+# LangSmith tracing (regression: ensure LLM path is traced when langsmith installed)
+# ============================================================================
+
+class TestLangSmithTraceable:
+    """When langsmith is installed, critical functions must be @traceable-decorated."""
+
+    def test_invoke_claude_is_traceable_when_langsmith_installed(self):
+        pytest.importorskip("langsmith")
+        from app.services import claude_service
+        assert getattr(
+            claude_service._invoke_claude, "__langsmith_traceable__", False
+        ), "_invoke_claude should be @traceable when langsmith is installed"
+
+    def test_run_analysis_is_traceable_when_langsmith_installed(self):
+        pytest.importorskip("langsmith")
+        from app.services import claude_service
+        assert getattr(
+            claude_service.run_analysis, "__langsmith_traceable__", False
+        ), "run_analysis should be @traceable when langsmith is installed"
+
+
+# ============================================================================
 # calculate_confidence_score tests
 # ============================================================================
 
