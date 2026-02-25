@@ -59,3 +59,4 @@ backend/.env
 
 # Allow committed safe env sample
 !backend/.env.sample
+.DS_Store
