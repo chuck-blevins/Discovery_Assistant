@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfidenceMeter } from '@/components/app/analysis/ConfidenceMeter'
@@ -17,6 +17,7 @@ type PageState = 'idle' | 'streaming' | 'result' | 'error'
 
 export default function AnalysisPage() {
   const { clientId, projectId } = useParams<{ clientId: string; projectId: string }>()
+  const location = useLocation()
   const { data: project, isLoading: projectLoading, isError: projectError } = useProject(projectId)
   const { data: dataSources } = useDataSources(projectId)
   const { data: analysesList } = useAnalyses(projectId)
@@ -30,6 +31,7 @@ export default function AnalysisPage() {
   const { data: selectedAnalysis } = useAnalysis(selectedAnalysisId ?? undefined)
   const { runStream } = useRunAnalysisStream(projectId)
   const resultsSectionRef = useRef<HTMLDivElement>(null)
+  const autoStartDoneRef = useRef(false)
 
   const hasDataSources = (dataSources?.length ?? 0) > 0
   const displayResult = result ?? (selectedAnalysisId && selectedAnalysis
@@ -52,6 +54,15 @@ export default function AnalysisPage() {
       resultsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [pageState, displayResult])
+
+  // Auto-start analysis when navigated from data-sources with state.autoStart
+  useEffect(() => {
+    const autoStart = (location.state as { autoStart?: boolean } | null)?.autoStart
+    if (autoStart && hasDataSources && pageState === 'idle' && !autoStartDoneRef.current) {
+      autoStartDoneRef.current = true
+      handleStartAnalysis()
+    }
+  }, [hasDataSources, pageState, location.state])
 
   const handleStartAnalysis = () => {
     if (!projectId || !hasDataSources) return

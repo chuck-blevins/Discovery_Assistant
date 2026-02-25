@@ -27,7 +27,11 @@ export function ClientRow({ client, onEdit }: ClientRowProps) {
           <Badge variant="outline" className="text-zinc-500 border-zinc-300">
             Archived
           </Badge>
-        ) : null}
+        ) : (
+          <Badge variant="secondary" className="font-normal text-zinc-600">
+            Active
+          </Badge>
+        )}
       </TableCell>
       <TableCell>{new Date(client.updated_at).toLocaleDateString()}</TableCell>
       <TableCell>
