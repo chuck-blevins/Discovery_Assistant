@@ -12,5 +12,6 @@ export const queryKeys = {
   },
   dataSources: {
     byProject: (projectId: string) => ['projects', projectId, 'data-sources'] as const,
+    preview: (dataSourceId: string) => ['data-sources', dataSourceId, 'preview'] as const,
   },
 }

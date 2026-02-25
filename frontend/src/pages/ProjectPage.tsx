@@ -1,8 +1,11 @@
 import { useParams } from 'react-router-dom'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getConfidenceColor } from '@/components/app/projects/ConfidenceIndicator'
+import DataSourceSection from '@/components/app/data-sources/DataSourceSection'
+import { useDataSources } from '@/hooks/useDataSources'
 import { useProject } from '@/hooks/useProjects'
 
 const OBJECTIVE_LABELS: Record<string, string> = {
@@ -15,6 +18,8 @@ const OBJECTIVE_LABELS: Record<string, string> = {
 export default function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const { data: project, isLoading, isError } = useProject(projectId)
+  const { data: dataSources } = useDataSources(projectId ?? '')
+  const hasDataSources = (dataSources?.length ?? 0) > 0
 
   if (isLoading) {
     return (
@@ -58,11 +63,16 @@ export default function ProjectPage() {
       </div>
       <section aria-label="Data Sources">
         <h2 className="text-lg font-semibold mb-2">Data Sources</h2>
-        <p className="text-muted-foreground">Coming soon</p>
+        <DataSourceSection projectId={projectId ?? ''} />
       </section>
       <section aria-label="Analysis" className="mt-6">
         <h2 className="text-lg font-semibold mb-2">Analysis</h2>
-        <p className="text-muted-foreground">Coming soon</p>
+        <Button disabled={!hasDataSources}>Analyze</Button>
+        {!hasDataSources && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Add at least one data source to run analysis.
+          </p>
+        )}
       </section>
     </>
   )

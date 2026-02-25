@@ -54,6 +54,33 @@ export interface ProjectCreate {
 
 export type ProjectUpdate = Partial<ProjectCreate>
 
+export interface DataSourceResponse {
+  id: string
+  project_id: string
+  source_type: 'file' | 'paste'
+  file_name: string
+  file_path: string | null
+  content_type: string | null
+  collected_date: string | null
+  creator_name: string | null
+  purpose: string | null
+  created_at: string
+}
+
+export interface DataSourcePreviewResponse {
+  id: string
+  file_name: string
+  raw_text_preview: string
+}
+
+export interface DataSourcePasteCreate {
+  raw_text: string
+  file_name?: string
+  collected_date?: string
+  creator_name?: string
+  purpose?: string
+}
+
 export type ConfidenceState = 'none' | 'red' | 'amber' | 'green'
 
 export function getConfidenceState(score: number | null): ConfidenceState {
