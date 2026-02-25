@@ -149,7 +149,7 @@ export function ProjectTable({ clientId }: ProjectTableProps) {
                   <p className="font-medium">{p.name}</p>
                   <Badge variant="outline" className="mt-1">{OBJECTIVE_LABELS[p.objective]}</Badge>
                   {p.status === 'archived' && (
-                    <Badge variant="outline" className="ml-2 text-zinc-500">Archived</Badge>
+                    <Badge variant="outline" className="ml-2 bg-gray-100 text-gray-600 border-gray-300">Archived</Badge>
                   )}
                   <p className="text-sm text-muted-foreground mt-1">
                     {new Date(p.updated_at).toLocaleDateString()}

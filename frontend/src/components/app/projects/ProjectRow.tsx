@@ -26,9 +26,9 @@ export function ProjectRow({ project, clientId, onEdit }: ProjectRowProps) {
       </TableCell>
       <TableCell>
         {project.status === 'archived' ? (
-          <Badge variant="outline" className="text-zinc-500">Archived</Badge>
+          <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300">Archived</Badge>
         ) : (
-          <Badge variant="secondary" className="font-normal text-zinc-600">Active</Badge>
+          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Active</Badge>
         )}
       </TableCell>
       <TableCell>{new Date(project.updated_at).toLocaleDateString()}</TableCell>

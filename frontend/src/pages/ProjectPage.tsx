@@ -47,7 +47,10 @@ export default function ProjectPage() {
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-bold">{project.name}</h1>
           <Badge variant="outline">{OBJECTIVE_LABELS[project.objective]}</Badge>
-          <Badge variant={project.status === 'archived' ? 'outline' : 'secondary'}>
+          <Badge
+            variant="outline"
+            className={project.status === 'archived' ? 'bg-gray-100 text-gray-600 border-gray-300' : 'bg-green-100 text-green-800 border-green-300'}
+          >
             {project.status === 'archived' ? 'Archived' : 'Active'}
           </Badge>
         </div>

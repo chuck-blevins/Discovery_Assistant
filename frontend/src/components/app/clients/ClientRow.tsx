@@ -24,16 +24,17 @@ export function ClientRow({ client, onEdit }: ClientRowProps) {
       <TableCell>{client.market_type ?? '—'}</TableCell>
       <TableCell>
         {client.status === 'archived' ? (
-          <Badge variant="outline" className="text-zinc-500 border-zinc-300">
+          <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300">
             Archived
           </Badge>
         ) : (
-          <Badge variant="secondary" className="font-normal text-zinc-600">
+          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
             Active
           </Badge>
         )}
       </TableCell>
       <TableCell>{new Date(client.updated_at).toLocaleDateString()}</TableCell>
+      <TableCell>{new Date(client.created_at).toLocaleDateString()}</TableCell>
       <TableCell>
         <ClientActions client={client} onEdit={() => onEdit(client)} />
       </TableCell>
