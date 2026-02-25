@@ -2,6 +2,11 @@
 
 Stories 4.1 (SSE streaming infrastructure) and 4.2 (problem validation logic)
 are both implemented here since they share the same Claude call pipeline.
+
+LangSmith: set LANGSMITH_TRACING=true and LANGSMITH_API_KEY in .env to send traces.
+When enabled, full prompt and response content is sent to LangSmith; in
+compliance-sensitive environments, disable tracing or use LangSmith access controls.
+See https://docs.langchain.com/langsmith/annotate-code
 """
 
 import json
@@ -9,6 +14,15 @@ import os
 
 import anthropic
 import httpx
+
+try:
+    from langsmith import traceable
+except ImportError:
+    def traceable(func=None, **kwargs):
+        """No-op when langsmith is not installed; app runs without tracing."""
+        if func is None:
+            return lambda f: f
+        return func
 
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
 
@@ -223,6 +237,25 @@ _MAX_TOTAL_SOURCE_CHARS = 150_000  # ~37K tokens across all sources
 _TRUNCATION_MARKER = "\n[... source truncated ...]"
 
 
+@traceable(run_type="llm", name="invokeClaude")
+async def _invoke_claude(
+    system: str,
+    user_content: str,
+    *,
+    model: str | None = None,
+    max_tokens: int = 4096,
+):
+    """Single Claude API call. Traced as LLM run in LangSmith when LANGSMITH_TRACING=true."""
+    message = await _client.messages.create(
+        model=model or CLAUDE_MODEL,
+        max_tokens=max_tokens,
+        system=system,
+        messages=[{"role": "user", "content": user_content}],
+    )
+    return message
+
+
+@traceable(name="formatPromptProblemValidation")
 def build_problem_validation_prompt(
     objective: str,
     assumed_problem: str | None,
@@ -278,6 +311,7 @@ def build_problem_validation_prompt(
     return "\n".join(parts)
 
 
+@traceable(name="formatPromptPositioning")
 def build_positioning_prompt(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
@@ -313,6 +347,7 @@ def build_positioning_prompt(
     return "\n".join(parts)
 
 
+@traceable(name="formatPromptPersona")
 def build_persona_prompt(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
@@ -345,6 +380,7 @@ def build_persona_prompt(
     return "\n".join(parts)
 
 
+@traceable(name="formatPromptIcp")
 def build_icp_prompt(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
@@ -377,6 +413,7 @@ def build_icp_prompt(
     return "\n".join(parts)
 
 
+@traceable(name="parseOutput")
 def _extract_json(text: str) -> dict:
     """Extract a JSON object from Claude's response.
 
@@ -404,6 +441,7 @@ def _extract_json(text: str) -> dict:
 _REQUIRED_RESPONSE_KEYS = {"frequency_score", "consistency_score", "strength_score", "insights"}
 
 
+@traceable(name="runAnalysis")
 async def run_analysis(
     objective: str,
     assumed_problem: str | None,
@@ -423,11 +461,9 @@ async def run_analysis(
         objective, assumed_problem, target_segments, data_sources
     )
 
-    message = await _client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=4096,
+    message = await _invoke_claude(
         system=PROBLEM_VALIDATION_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+        user_content=prompt,
     )
 
     raw_text = message.content[0].text
@@ -469,6 +505,7 @@ _POSITIONING_REQUIRED_KEYS = {
 }
 
 
+@traceable(name="runPositioningAnalysis")
 async def run_positioning_analysis(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
@@ -484,11 +521,9 @@ async def run_positioning_analysis(
     """
     prompt = build_positioning_prompt(objective, data_sources)
 
-    message = await _client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=4096,
+    message = await _invoke_claude(
         system=POSITIONING_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+        user_content=prompt,
     )
 
     raw_text = message.content[0].text
@@ -546,6 +581,7 @@ _PERSONA_REQUIRED_KEYS = {"confidence_score", "field_quality"} | set(_PERSONA_FI
 _QUALITY_VALUES = {"low", "medium", "high"}
 
 
+@traceable(name="runPersonaAnalysis")
 async def run_persona_analysis(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
@@ -560,11 +596,9 @@ async def run_persona_analysis(
     """
     prompt = build_persona_prompt(objective, data_sources)
 
-    message = await _client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=4096,
+    message = await _invoke_claude(
         system=PERSONA_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+        user_content=prompt,
     )
 
     raw_text = message.content[0].text
@@ -623,6 +657,7 @@ _ICP_REQUIRED_KEYS = {"dimension_confidence"} | set(_ICP_DIMENSION_NAMES)
 _ICP_QUALITY_SCORE = {"low": 0.33, "medium": 0.66, "high": 1.0}
 
 
+@traceable(name="runIcpAnalysis")
 async def run_icp_analysis(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
@@ -637,11 +672,9 @@ async def run_icp_analysis(
     """
     prompt = build_icp_prompt(objective, data_sources)
 
-    message = await _client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=4096,
+    message = await _invoke_claude(
         system=ICP_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+        user_content=prompt,
     )
 
     raw_text = message.content[0].text
@@ -722,6 +755,7 @@ _RECOMMENDATIONS_REQUIRED_KEYS = {
 }
 
 
+@traceable(name="formatPromptRecommendations")
 def build_recommendations_prompt(
     project_name: str,
     objective: str,
@@ -737,6 +771,7 @@ Number of data sources analyzed: {source_count}
 Generate next-step recommendations and the two markdown artifacts (interview script, survey template) as specified in the system prompt. Return only the JSON object."""
 
 
+@traceable(name="runRecommendationsGeneration")
 async def run_recommendations_generation(
     project_name: str,
     objective: str,
@@ -759,11 +794,9 @@ async def run_recommendations_generation(
         source_count=source_count,
     )
 
-    message = await _client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=4096,
+    message = await _invoke_claude(
         system=RECOMMENDATIONS_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+        user_content=prompt,
     )
 
     raw_text = message.content[0].text
