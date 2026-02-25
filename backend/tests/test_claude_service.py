@@ -162,6 +162,21 @@ class TestBuildProblemValidationPrompt:
         prompt = build_problem_validation_prompt("obj", None, [], [("big.txt", large_text)])
         assert "source truncated" in prompt
 
+    def test_truncation_marker_preserved_when_near_budget(self):
+        """When remaining budget is small, the truncation marker must still appear (not sliced away)."""
+        from app.services.claude_service import (
+            _MAX_TOTAL_SOURCE_CHARS,
+            build_problem_validation_prompt,
+        )
+        # First source consumes almost all budget; second source is large and gets truncated
+        first_len = _MAX_TOTAL_SOURCE_CHARS - 100
+        first_content = "a" * first_len
+        second_content = "b" * 1000  # will be truncated with marker
+        sources = [("first.txt", first_content), ("second.txt", second_content)]
+        prompt = build_problem_validation_prompt("obj", None, [], sources)
+        # Marker appears in prompt (possibly with line prefix "N: "; core text must be present)
+        assert "[... source truncated ...]" in prompt
+
     def test_total_source_limit_omits_excess_sources(self):
         from app.services.claude_service import build_problem_validation_prompt, _MAX_TOTAL_SOURCE_CHARS
         # Two sources that together exceed the total limit
@@ -204,6 +219,14 @@ class TestExtractJson:
         from app.services.claude_service import _extract_json
         with pytest.raises(json.JSONDecodeError):
             _extract_json("not json at all")
+
+    def test_postamble_with_braces_uses_brace_matching(self):
+        """Postamble containing '}' must not be included; extract by matching first { to its closing }."""
+        from app.services.claude_service import _extract_json
+        text = '{"frequency_score": 0.5, "insights": []} Additional {context} for reference'
+        result = _extract_json(text)
+        assert result["frequency_score"] == 0.5
+        assert result["insights"] == []
 
 
 # ============================================================================
@@ -322,3 +345,59 @@ class TestRunAnalysis:
             )
             result = await run_analysis("problem-validation", None, [], [])
         assert result["raw_response"] == json.dumps(_VALID_PAYLOAD)
+
+
+# ============================================================================
+# run_recommendations_generation (Story 6-1)
+# ============================================================================
+
+_VALID_RECOMMENDATIONS_PAYLOAD = {
+    "action_items": ["Interview 3 more customers", "Validate pricing assumption"],
+    "interview_script_md": "# Intro\\n\\nKey questions...",
+    "survey_template_md": "# Screening\\n\\nMain questions...",
+    "can_create_next_project": True,
+    "suggested_next_objective": "positioning",
+}
+
+
+class TestRunRecommendationsGeneration:
+    @pytest.mark.asyncio
+    async def test_returns_all_required_keys(self):
+        from app.services.claude_service import run_recommendations_generation
+        with patch("app.services.claude_service._client") as mock_client:
+            mock_client.messages.create = AsyncMock(
+                return_value=_make_mock_response(_VALID_RECOMMENDATIONS_PAYLOAD)
+            )
+            result = await run_recommendations_generation(
+                "My Project", "problem-validation", 0.7, 5
+            )
+        assert set(result.keys()) == {
+            "action_items", "interview_script_md", "survey_template_md",
+            "can_create_next_project", "suggested_next_objective",
+        }
+        assert result["action_items"] == ["Interview 3 more customers", "Validate pricing assumption"]
+        assert result["can_create_next_project"] is True
+        assert result["suggested_next_objective"] == "positioning"
+
+    @pytest.mark.asyncio
+    async def test_invalid_suggested_next_objective_normalized_to_none(self):
+        from app.services.claude_service import run_recommendations_generation
+        payload = {**_VALID_RECOMMENDATIONS_PAYLOAD, "suggested_next_objective": "invalid-objective"}
+        with patch("app.services.claude_service._client") as mock_client:
+            mock_client.messages.create = AsyncMock(
+                return_value=_make_mock_response(payload)
+            )
+            result = await run_recommendations_generation(
+                "Proj", "problem-validation", 0.5, 3
+            )
+        assert result["suggested_next_objective"] is None
+
+    @pytest.mark.asyncio
+    async def test_missing_required_keys_raises(self):
+        from app.services.claude_service import run_recommendations_generation
+        with patch("app.services.claude_service._client") as mock_client:
+            mock_client.messages.create = AsyncMock(
+                return_value=_make_mock_response({"action_items": []})
+            )
+            with pytest.raises(ValueError, match="missing required keys"):
+                await run_recommendations_generation("P", "positioning", 0.6, 2)

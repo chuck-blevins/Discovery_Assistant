@@ -1,5 +1,6 @@
-# AI / Claude integration
+# AI / Claude integration (httpx required for timeout on AsyncAnthropic http_client)
 anthropic>=0.49.0
+httpx>=0.25.0
 
 # Core dependencies
 fastapi==0.104.1

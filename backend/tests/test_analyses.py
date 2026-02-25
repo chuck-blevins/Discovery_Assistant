@@ -21,7 +21,6 @@ class TestInsightResponseSchema:
         from app.schemas.analysis import InsightResponse
         mock_insight = type("Insight", (), {
             "id": uuid.uuid4(),
-            "analysis_id": uuid.uuid4(),
             "type": "finding",
             "text": "4/5 sources confirm the problem exists",
             "citation": "interview-001.txt:line 42",
@@ -39,7 +38,6 @@ class TestInsightResponseSchema:
         from app.schemas.analysis import InsightResponse
         mock_insight = type("Insight", (), {
             "id": uuid.uuid4(),
-            "analysis_id": uuid.uuid4(),
             "type": "gap",
             "text": "Decision drivers not yet understood",
             "citation": None,
@@ -57,7 +55,6 @@ class TestInsightResponseSchema:
         from app.schemas.analysis import InsightResponse
         mock_insight = type("Insight", (), {
             "id": uuid.uuid4(),
-            "analysis_id": uuid.uuid4(),
             "type": "contradiction",
             "text": "One source suggests the problem is not urgent",
             "citation": "notes.md:line 15",
@@ -72,7 +69,6 @@ class TestInsightResponseSchema:
         from app.schemas.analysis import InsightResponse
         mock_insight = type("Insight", (), {
             "id": uuid.uuid4(),
-            "analysis_id": uuid.uuid4(),
             "type": "unknown-type",
             "text": "Some text",
             "citation": None,
@@ -82,6 +78,29 @@ class TestInsightResponseSchema:
         })()
         with pytest.raises(ValidationError):
             InsightResponse.model_validate(mock_insight)
+
+    def test_insight_response_excludes_analysis_id_from_api(self):
+        """InsightResponse must not expose analysis_id (internal FK)."""
+        from app.schemas.analysis import InsightResponse
+        assert "analysis_id" not in InsightResponse.model_fields
+
+    def test_real_insight_model_serializes_to_response(self):
+        """Schema validates against ORM Insight-like object (id, type, text, citation, confidence, source_count)."""
+        from app.schemas.analysis import InsightResponse
+        # Object with same attributes an ORM Insight would have when serialized (analysis_id present on ORM but excluded by schema)
+        obj = type("Insight", (), {
+            "id": uuid.uuid4(),
+            "type": "finding",
+            "text": "Validated",
+            "citation": "f:1",
+            "confidence": 0.9,
+            "source_count": 2,
+            "created_at": datetime.now(timezone.utc),
+        })()
+        resp = InsightResponse.model_validate(obj)
+        assert resp.id == obj.id
+        assert resp.type == obj.type
+        assert not hasattr(resp, "analysis_id") or getattr(resp, "analysis_id", None) is None
 
 
 # ============================================================================
@@ -99,10 +118,12 @@ class TestAnalysisResponseSchema:
             "tokens_used": 2000,
             "cost_usd": 0.03,
             "insights": [],
+            "positioning_result": None,
             "created_at": datetime.now(timezone.utc),
         })()
         resp = AnalysisResponse.model_validate(mock_analysis)
         assert resp.objective == "problem-validation"
+        assert resp.positioning_result is None
         assert resp.confidence_score == 0.75
         assert resp.tokens_used == 2000
         assert resp.insights == []
@@ -131,7 +152,6 @@ class TestAnalysisResponseSchema:
         from app.schemas.analysis import AnalysisResponse, InsightResponse
         mock_insight = type("Insight", (), {
             "id": uuid.uuid4(),
-            "analysis_id": uuid.uuid4(),
             "type": "finding",
             "text": "Problem validated",
             "citation": "file.txt:line 1",
@@ -152,6 +172,29 @@ class TestAnalysisResponseSchema:
         resp = AnalysisResponse.model_validate(mock_analysis)
         assert len(resp.insights) == 1
         assert resp.insights[0].type == "finding"
+
+    def test_positioning_result_serialized_when_present(self):
+        from app.schemas.analysis import AnalysisResponse
+        mock_analysis = type("Analysis", (), {
+            "id": uuid.uuid4(),
+            "project_id": uuid.uuid4(),
+            "objective": "positioning",
+            "confidence_score": 0.82,
+            "tokens_used": 1000,
+            "cost_usd": 0.02,
+            "insights": [],
+            "positioning_result": {
+                "value_drivers": [{"text": "Speed", "frequency_count": 5}],
+                "alternative_angles": ["B2B", "B2C"],
+                "recommended_interviews": ["Product managers"],
+                "confidence_score": 0.82,
+            },
+            "created_at": datetime.now(timezone.utc),
+        })()
+        resp = AnalysisResponse.model_validate(mock_analysis)
+        assert resp.positioning_result is not None
+        assert resp.positioning_result.value_drivers[0].text == "Speed"
+        assert resp.positioning_result.alternative_angles == ["B2B", "B2C"]
 
 
 # ============================================================================

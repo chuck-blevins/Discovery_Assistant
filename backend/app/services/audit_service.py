@@ -17,6 +17,8 @@ async def log(
     entity_type: str,
     entity_id: uuid.UUID | None = None,
     details: dict[str, Any] | None = None,
+    *,
+    commit: bool = True,
 ) -> None:
     """Write an audit log entry. Swallows all exceptions to never block callers."""
     try:
@@ -30,6 +32,9 @@ async def log(
             created_at=datetime.now(timezone.utc),
         )
         db.add(entry)
-        await db.commit()
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
     except Exception as exc:  # noqa: BLE001
         print(f"[audit_service] Failed to write audit log: {exc}", file=sys.stderr)

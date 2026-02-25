@@ -65,6 +65,7 @@ from app.api.routes.clients import router as clients_router
 from app.api.routes.projects import router as projects_router
 from app.api.routes.data_sources import router as data_sources_router
 from app.api.routes.analyses import router as analyses_router
+from app.api.routes.artifacts import router as artifacts_router
 from app.schemas.auth import HealthResponse
 from app.services import storage_service
 
@@ -135,6 +136,7 @@ app.include_router(data_sources_router)
 # Routes: /projects/{id}/analyze/stream, /projects/{id}/analyze,
 #         /projects/{id}/analyses, /analyses/{id}
 app.include_router(analyses_router)
+app.include_router(artifacts_router)
 
 
 # ============================================================================

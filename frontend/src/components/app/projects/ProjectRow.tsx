@@ -11,6 +11,11 @@ interface ProjectRowProps {
   onEdit: (project: ProjectResponse) => void
 }
 
+function formatCost(usd: number | null | undefined): string {
+  if (usd == null || Number.isNaN(usd)) return '$0.00'
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(usd)
+}
+
 export function ProjectRow({ project, clientId, onEdit }: ProjectRowProps) {
   return (
     <TableRow style={{ borderLeft: `4px solid ${getConfidenceColor(project.confidence_score)}` }}>
@@ -25,6 +30,7 @@ export function ProjectRow({ project, clientId, onEdit }: ProjectRowProps) {
         )}
       </TableCell>
       <TableCell>{new Date(project.updated_at).toLocaleDateString()}</TableCell>
+      <TableCell className="tabular-nums">{formatCost(project.total_cost_usd)}</TableCell>
       <TableCell>
         <ProjectActions project={project} clientId={clientId} onEdit={() => onEdit(project)} />
       </TableCell>

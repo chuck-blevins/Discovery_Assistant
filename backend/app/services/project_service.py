@@ -103,6 +103,8 @@ async def update_project_confidence(
     db: AsyncSession,
     project_id: uuid.UUID,
     confidence_score: float,
+    *,
+    commit: bool = True,
 ) -> Project | None:
     """Update project.confidence_score and last_analyzed_at after a successful analysis."""
     project = await get_project(db, project_id)
@@ -111,8 +113,11 @@ async def update_project_confidence(
     project.confidence_score = confidence_score
     project.last_analyzed_at = datetime.now(timezone.utc)
     project.updated_at = datetime.now(timezone.utc)
-    await db.commit()
-    await db.refresh(project)
+    if commit:
+        await db.commit()
+        await db.refresh(project)
+    else:
+        await db.flush()
     return project
 
 

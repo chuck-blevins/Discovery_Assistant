@@ -1,5 +1,16 @@
 export const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
+/** Thrown by api when response is not ok; carries status for 404 etc. */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     ...options,
@@ -18,7 +29,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     } catch {
       // ignore parse error
     }
-    throw new Error(detail)
+    throw new ApiError(detail, response.status)
   }
 
   if (response.status === 204 || response.headers.get('content-length') === '0') {

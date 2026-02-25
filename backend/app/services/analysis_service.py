@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,8 +13,13 @@ from app.models.insight import Insight
 _VALID_INSIGHT_TYPES = {"finding", "contradiction", "gap"}
 
 
-def _validate_insights(insights_data: list[dict]) -> None:
+def _validate_insights(insights_data: list[dict], *, allow_empty: bool = False) -> None:
     """Raise ValueError if any insight dict fails structural validation."""
+    if not insights_data and not allow_empty:
+        raise ValueError(
+            "Insights list cannot be empty. Claude is instructed to return 4-8 insights; "
+            "empty list indicates upstream parsing or API failure."
+        )
     for i, ins in enumerate(insights_data):
         ins_type = ins.get("type")
         if ins_type not in _VALID_INSIGHT_TYPES:
@@ -28,6 +33,24 @@ def _validate_insights(insights_data: list[dict]) -> None:
             raise ValueError(
                 f"Insight[{i}] of type {ins_type!r} requires a non-null citation."
             )
+        # confidence: must be None or float in [0.0, 1.0] for finding/contradiction; gap must be None
+        conf = ins.get("confidence")
+        if ins_type == "gap":
+            if conf is not None:
+                raise ValueError(
+                    f"Insight[{i}] of type 'gap' must have confidence null, got {conf!r}."
+                )
+        else:
+            if conf is not None:
+                if not isinstance(conf, (int, float)):
+                    raise ValueError(
+                        f"Insight[{i}] confidence must be a number or null, got {type(conf).__name__}."
+                    )
+                c = float(conf)
+                if not (0.0 <= c <= 1.0):
+                    raise ValueError(
+                        f"Insight[{i}] confidence must be in [0.0, 1.0], got {c}."
+                    )
 
 
 async def create_analysis(
@@ -39,9 +62,15 @@ async def create_analysis(
     tokens_used: int,
     cost_usd: float,
     insights_data: list[dict],
+    *,
+    positioning_result: dict | None = None,
+    allow_empty_insights: bool = False,
 ) -> Analysis:
-    """Create an analysis record with its insights and return the loaded analysis."""
-    _validate_insights(insights_data)
+    """Create an analysis record with its insights. Caller must commit the session."""
+    _validate_insights(
+        insights_data,
+        allow_empty=positioning_result is not None or allow_empty_insights,
+    )
 
     analysis = Analysis(
         id=uuid.uuid4(),
@@ -51,6 +80,7 @@ async def create_analysis(
         raw_response=raw_response,
         tokens_used=tokens_used,
         cost_usd=cost_usd,
+        positioning_result=positioning_result,
         created_at=datetime.now(timezone.utc),
     )
     db.add(analysis)
@@ -69,9 +99,8 @@ async def create_analysis(
         )
         db.add(insight)
 
-    await db.commit()
-
-    # Re-query with selectinload so analysis.insights is populated
+    await db.flush()
+    # Re-query with selectinload so analysis.insights is populated (same transaction)
     stmt = (
         select(Analysis)
         .options(selectinload(Analysis.insights))
@@ -125,3 +154,21 @@ async def has_recent_analysis(
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none() is not None
+
+
+async def get_project_cost_totals(
+    db: AsyncSession,
+    project_ids: list[uuid.UUID],
+) -> dict[uuid.UUID, float]:
+    """Return total cost_usd per project (sum of analyses). Story 6-3."""
+    if not project_ids:
+        return {}
+    stmt = (
+        select(Analysis.project_id, func.coalesce(func.sum(Analysis.cost_usd), 0).label("total"))
+        .where(Analysis.project_id.in_(project_ids))
+        .group_by(Analysis.project_id)
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+    by_id = {row.project_id: float(row.total) for row in rows}
+    return {pid: by_id.get(pid, 0.0) for pid in project_ids}
