@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,17 +13,11 @@ import {
 } from '@/components/ui/table'
 import { useProjects } from '@/hooks/useProjects'
 import { useProjectFormStore } from '@/stores/useProjectFormStore'
+import { OBJECTIVE_LABELS } from '@/lib/constants'
 import { getConfidenceColor } from './ConfidenceIndicator'
 import { ProjectActions } from './ProjectActions'
 import { ProjectForm } from './ProjectForm'
 import { ProjectRow } from './ProjectRow'
-
-const OBJECTIVE_LABELS: Record<string, string> = {
-  'problem-validation': 'Problem Validation',
-  'positioning': 'Positioning',
-  'persona-buildout': 'Persona Build-out',
-  'icp-refinement': 'ICP Refinement',
-}
 
 interface ProjectTableProps {
   clientId: string
@@ -34,9 +28,13 @@ export function ProjectTable({ clientId }: ProjectTableProps) {
   const { open, project, openCreate, openEdit, close } = useProjectFormStore()
   const { data: projects, isLoading, isError } = useProjects(clientId, includeArchived)
 
+  // Reset store on unmount so stale project state doesn't carry over across client navigations
+  useEffect(() => () => close(), [close])
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">Projects</h2>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -46,8 +44,8 @@ export function ProjectTable({ clientId }: ProjectTableProps) {
             />
             Show archived
           </label>
+          <Button onClick={openCreate}>New Project</Button>
         </div>
-        <Button onClick={openCreate}>New Project</Button>
       </div>
 
       {isLoading && (
@@ -81,7 +79,7 @@ export function ProjectTable({ clientId }: ProjectTableProps) {
             </Table>
           </div>
           {/* Mobile skeleton */}
-          <div className="block md:hidden flex flex-col gap-3">
+          <div className="flex md:hidden flex-col gap-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="border rounded-lg p-4">
                 <Skeleton className="h-4 w-40 mb-2" />
@@ -128,7 +126,7 @@ export function ProjectTable({ clientId }: ProjectTableProps) {
           </div>
 
           {/* Mobile card list */}
-          <div className="block md:hidden flex flex-col gap-3">
+          <div className="flex md:hidden flex-col gap-3">
             {projects.map((p) => (
               <div
                 key={p.id}

@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { screen, fireEvent, waitFor } from '@testing-library/react'
 import { axe } from 'vitest-axe'
 import { ProjectForm } from '@/components/app/projects/ProjectForm'
+import { renderWithProviders } from '@/tests/utils'
 import type { ProjectResponse } from '@/types/api'
 
 // Mock shadcn Select with a native <select> so jsdom can interact with it
@@ -56,17 +55,6 @@ const existingProject: ProjectResponse = {
   archived_at: null,
 }
 
-function renderWithProviders(ui: React.ReactElement) {
-  const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
-  return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter>{ui}</MemoryRouter>
-    </QueryClientProvider>
-  )
-}
-
 beforeEach(() => {
   vi.clearAllMocks()
 })
@@ -86,7 +74,7 @@ describe('ProjectForm — create mode', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: /create project/i }))
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument()
+      expect(screen.getAllByRole('alert').length).toBeGreaterThan(0)
     })
     expect(screen.getByText('Name is required')).toBeInTheDocument()
   })

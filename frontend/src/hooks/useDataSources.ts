@@ -10,10 +10,10 @@ import {
 import { queryKeys } from '@/lib/queryKeys'
 import type { DataSourcePasteCreate } from '@/types/api'
 
-export function useDataSources(projectId: string) {
+export function useDataSources(projectId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.dataSources.byProject(projectId),
-    queryFn: () => listDataSources(projectId),
+    queryKey: queryKeys.dataSources.byProject(projectId ?? ''),
+    queryFn: () => listDataSources(projectId!),
     enabled: Boolean(projectId),
   })
 }

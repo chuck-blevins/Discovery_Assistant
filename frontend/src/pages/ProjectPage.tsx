@@ -7,18 +7,12 @@ import { getConfidenceColor } from '@/components/app/projects/ConfidenceIndicato
 import DataSourceSection from '@/components/app/data-sources/DataSourceSection'
 import { useDataSources } from '@/hooks/useDataSources'
 import { useProject } from '@/hooks/useProjects'
-
-const OBJECTIVE_LABELS: Record<string, string> = {
-  'problem-validation': 'Problem Validation',
-  'positioning': 'Positioning',
-  'persona-buildout': 'Persona Build-out',
-  'icp-refinement': 'ICP Refinement',
-}
+import { OBJECTIVE_LABELS } from '@/lib/constants'
 
 export default function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const { data: project, isLoading, isError } = useProject(projectId)
-  const { data: dataSources } = useDataSources(projectId ?? '')
+  const { data: dataSources } = useDataSources(projectId)
   const hasDataSources = (dataSources?.length ?? 0) > 0
 
   if (isLoading) {

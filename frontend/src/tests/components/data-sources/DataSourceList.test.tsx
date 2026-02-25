@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { axe } from 'vitest-axe'
 import { DataSourceList } from '@/components/app/data-sources/DataSourceList'
 import { renderWithProviders } from '@/tests/utils'

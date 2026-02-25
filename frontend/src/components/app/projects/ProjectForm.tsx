@@ -46,6 +46,8 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
   const isEdit = Boolean(project)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [nameError, setNameError] = useState<string | null>(null)
+  const [objectiveError, setObjectiveError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const createMutation = useCreateProject(clientId)
   const updateMutation = useUpdateProject(clientId)
@@ -63,6 +65,8 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
           : emptyForm
       )
       setNameError(null)
+      setObjectiveError(null)
+      setFormError(null)
     }
   }, [open, project])
 
@@ -70,6 +74,8 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
     if (!v) {
       setForm(emptyForm)
       setNameError(null)
+      setObjectiveError(null)
+      setFormError(null)
     }
     onOpenChange(v)
   }
@@ -77,15 +83,19 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setNameError(null)
+    setObjectiveError(null)
+    setFormError(null)
 
+    let hasError = false
     if (!form.name.trim()) {
       setNameError('Name is required')
-      return
+      hasError = true
     }
     if (!form.objective) {
-      setNameError('Objective is required')
-      return
+      setObjectiveError('Objective is required')
+      hasError = true
     }
+    if (hasError) return
 
     const segments = form.targetSegments
       .split(',')
@@ -107,7 +117,12 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
       handleClose(false)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong'
-      setNameError(msg)
+      // 409 duplicate name errors are name-specific; other errors are form-level
+      if (msg.toLowerCase().includes('name')) {
+        setNameError(msg)
+      } else {
+        setFormError(msg)
+      }
     }
   }
 
@@ -118,6 +133,12 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
           <DialogTitle>{isEdit ? 'Edit Project' : 'New Project'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {formError && (
+            <p className="text-sm text-destructive" role="alert">
+              {formError}
+            </p>
+          )}
+
           <div className="space-y-1">
             <Label htmlFor="project-name">Name</Label>
             <Input
@@ -150,6 +171,11 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
                 ))}
               </SelectContent>
             </Select>
+            {objectiveError && (
+              <p className="text-sm text-destructive" role="alert">
+                {objectiveError}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1">

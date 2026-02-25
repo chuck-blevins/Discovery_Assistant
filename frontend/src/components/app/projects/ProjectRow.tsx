@@ -1,15 +1,9 @@
 import { Badge } from '@/components/ui/badge'
 import { TableCell, TableRow } from '@/components/ui/table'
+import { OBJECTIVE_LABELS } from '@/lib/constants'
 import { getConfidenceColor } from './ConfidenceIndicator'
 import { ProjectActions } from './ProjectActions'
 import type { ProjectResponse } from '@/types/api'
-
-const OBJECTIVE_LABELS: Record<string, string> = {
-  'problem-validation': 'Problem Validation',
-  'positioning': 'Positioning',
-  'persona-buildout': 'Persona Build-out',
-  'icp-refinement': 'ICP Refinement',
-}
 
 interface ProjectRowProps {
   project: ProjectResponse
