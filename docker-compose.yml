@@ -1,6 +1,6 @@
-# Discovery App — run backend API, Postgres, and MinIO.
+# Discovery App — run backend API, frontend, Postgres, and MinIO.
 # From repo root: docker compose up --build
-# Backend: http://localhost:8000  |  MinIO console: http://localhost:9001
+# Frontend: http://localhost:5173  |  Backend: http://localhost:8000  |  MinIO console: http://localhost:9001
 # Copy backend/.env.example to backend/.env and set SECRET_KEY, CLAUDE_API_KEY, etc.
 
 services:
@@ -63,6 +63,17 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    # Browser uses VITE_API_URL or default http://localhost:8000; backend is on host port 8000.
 
   # One-off: run migrations (optional; backend entrypoint already runs migrations)
   migrate:
