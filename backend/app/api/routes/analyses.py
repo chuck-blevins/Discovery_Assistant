@@ -21,6 +21,7 @@ from app.api.deps import get_current_user
 from app.db import get_db
 from app.models.user import User
 from app.schemas.analysis import AnalysisResponse
+from app.utils.strength import confidence_to_strength
 from app.schemas.artifact import ArtifactSummaryResponse
 from app.services import (
     analysis_service,
@@ -135,7 +136,10 @@ async def stream_analysis(
     # Snapshot all needed data before the injected session closes
     objective = project.objective
     target_segments = list(project.target_segments)
-    assumed_problem = client_obj.assumed_problem if client_obj else None
+    # Story 1-1: prefer project-level assumed_problem for problem-validation, fall back to client
+    assumed_problem = project.assumed_problem or (
+        client_obj.assumed_problem if client_obj else None
+    )
     user_id = current_user.id
     project_id_val = project_id
     sources = [(ds.file_name, ds.raw_text or "") for ds in data_sources]
@@ -379,118 +383,146 @@ async def run_analysis(
             detail="Unsupported project objective for analysis.",
         )
 
-    assumed_problem = client_obj.assumed_problem if client_obj else None
+    # Story 1-1: prefer project-level assumed_problem for problem-validation, fall back to client
+    assumed_problem = project.assumed_problem or (
+        client_obj.assumed_problem if client_obj else None
+    )
     sources = [(ds.file_name, ds.raw_text or "") for ds in data_sources]
 
     lock = await _acquire_project_analysis_lock(project_id)
     async with lock:
-        if project.objective == "positioning":
-            result = await claude_service.run_positioning_analysis(
-                objective=project.objective,
-                data_sources=sources,
-            )
-            _pr = result["positioning_result"]
-            score_for_project = _pr["confidence_score"] if _pr.get("confidence_score") is not None else 0.0
-            analysis = await analysis_service.create_analysis(
-                db=db,
-                project_id=project_id,
-                objective=project.objective,
-                confidence_score=score_for_project,
-                raw_response=result["raw_response"],
-                tokens_used=result["tokens_used"],
-                cost_usd=result["cost_usd"],
-                insights_data=[],
-                positioning_result=result["positioning_result"],
-            )
-        elif project.objective == "persona-buildout":
-            result = await claude_service.run_persona_analysis(
-                objective=project.objective,
-                data_sources=sources,
-            )
-            pd = result["persona_data"]
-            score_for_project = pd.get("confidence_score") if pd.get("confidence_score") is not None else 0.0
-            await persona_service.upsert_persona(db, project_id, **pd)
-            analysis = await analysis_service.create_analysis(
-                db=db,
-                project_id=project_id,
-                objective=project.objective,
-                confidence_score=score_for_project,
-                raw_response=result["raw_response"],
-                tokens_used=result["tokens_used"],
-                cost_usd=result["cost_usd"],
-                insights_data=[],
-                allow_empty_insights=True,
-            )
-        elif project.objective == "icp-refinement":
-            result = await claude_service.run_icp_analysis(
-                objective=project.objective,
-                data_sources=sources,
-            )
-            idata = result["icp_data"]
-            score_for_project = idata.get("confidence_score") if idata.get("confidence_score") is not None else 0.0
-            await icp_service.upsert_icp(db, project_id, **idata)
-            analysis = await analysis_service.create_analysis(
-                db=db,
-                project_id=project_id,
-                objective=project.objective,
-                confidence_score=score_for_project,
-                raw_response=result["raw_response"],
-                tokens_used=result["tokens_used"],
-                cost_usd=result["cost_usd"],
-                insights_data=[],
-                allow_empty_insights=True,
-            )
-        else:
-            result = await claude_service.run_analysis(
-                objective=project.objective,
-                assumed_problem=assumed_problem,
-                target_segments=list(project.target_segments),
-                data_sources=sources,
-            )
-            score_for_project = result["confidence_score"]
-            analysis = await analysis_service.create_analysis(
-                db=db,
-                project_id=project_id,
-                objective=project.objective,
-                confidence_score=score_for_project,
-                raw_response=result["raw_response"],
-                tokens_used=result["tokens_used"],
-                cost_usd=result["cost_usd"],
-                insights_data=result["insights"],
-            )
-
-        # Story 6-1: generate next-step recommendations (optional; don't fail analysis)
         try:
-            rec = await claude_service.run_recommendations_generation(
-                project_name=project.name,
-                objective=project.objective,
-                confidence_score=score_for_project,
-                source_count=len(sources),
+            if project.objective == "positioning":
+                result = await claude_service.run_positioning_analysis(
+                    objective=project.objective,
+                    data_sources=sources,
+                )
+                _pr = result["positioning_result"]
+                score_for_project = _pr["confidence_score"] if _pr.get("confidence_score") is not None else 0.0
+                analysis = await analysis_service.create_analysis(
+                    db=db,
+                    project_id=project_id,
+                    objective=project.objective,
+                    confidence_score=score_for_project,
+                    raw_response=result["raw_response"],
+                    tokens_used=result["tokens_used"],
+                    cost_usd=result["cost_usd"],
+                    insights_data=[],
+                    positioning_result=result["positioning_result"],
+                )
+            elif project.objective == "persona-buildout":
+                result = await claude_service.run_persona_analysis(
+                    objective=project.objective,
+                    data_sources=sources,
+                )
+                pd = result["persona_data"]
+                score_for_project = pd.get("confidence_score") if pd.get("confidence_score") is not None else 0.0
+                await persona_service.upsert_persona(db, project_id, **pd)
+                analysis = await analysis_service.create_analysis(
+                    db=db,
+                    project_id=project_id,
+                    objective=project.objective,
+                    confidence_score=score_for_project,
+                    raw_response=result["raw_response"],
+                    tokens_used=result["tokens_used"],
+                    cost_usd=result["cost_usd"],
+                    insights_data=[],
+                    allow_empty_insights=True,
+                )
+            elif project.objective == "icp-refinement":
+                result = await claude_service.run_icp_analysis(
+                    objective=project.objective,
+                    data_sources=sources,
+                )
+                idata = result["icp_data"]
+                score_for_project = idata.get("confidence_score") if idata.get("confidence_score") is not None else 0.0
+                await icp_service.upsert_icp(db, project_id, **idata)
+                analysis = await analysis_service.create_analysis(
+                    db=db,
+                    project_id=project_id,
+                    objective=project.objective,
+                    confidence_score=score_for_project,
+                    raw_response=result["raw_response"],
+                    tokens_used=result["tokens_used"],
+                    cost_usd=result["cost_usd"],
+                    insights_data=[],
+                    allow_empty_insights=True,
+                )
+            else:
+                result = await claude_service.run_analysis(
+                    objective=project.objective,
+                    assumed_problem=assumed_problem,
+                    target_segments=list(project.target_segments),
+                    data_sources=sources,
+                )
+                score_for_project = result["confidence_score"]
+                analysis = await analysis_service.create_analysis(
+                    db=db,
+                    project_id=project_id,
+                    objective=project.objective,
+                    confidence_score=score_for_project,
+                    raw_response=result["raw_response"],
+                    tokens_used=result["tokens_used"],
+                    cost_usd=result["cost_usd"],
+                    insights_data=result["insights"],
+                )
+
+            # Story 6-1: generate next-step recommendations (optional; don't fail analysis)
+            try:
+                rec = await claude_service.run_recommendations_generation(
+                    project_name=project.name,
+                    objective=project.objective,
+                    confidence_score=score_for_project,
+                    source_count=len(sources),
+                )
+                analysis.recommendations = rec
+            except Exception as rec_exc:
+                logger.warning("Recommendations generation failed: %s", rec_exc)
+                analysis.recommendations = None
+
+            await project_service.update_project_confidence(
+                db, project_id, score_for_project, commit=False
             )
-            analysis.recommendations = rec
-        except Exception as rec_exc:
-            logger.warning("Recommendations generation failed: %s", rec_exc)
-            analysis.recommendations = None
+            await audit_service.log(
+                db,
+                current_user.id,
+                "analysis.created",
+                "analysis",
+                analysis.id,
+                {
+                    "project_id": str(project_id),
+                    "confidence_score": score_for_project,
+                },
+                commit=False,
+            )
+            await db.commit()
+            await db.refresh(analysis)
 
-        await project_service.update_project_confidence(
-            db, project_id, score_for_project, commit=False
-        )
-        await audit_service.log(
-            db,
-            current_user.id,
-            "analysis.created",
-            "analysis",
-            analysis.id,
-            {
-                "project_id": str(project_id),
-                "confidence_score": score_for_project,
-            },
-            commit=False,
-        )
-        await db.commit()
-        await db.refresh(analysis)
+        except (ValueError, json.JSONDecodeError) as e:
+            await db.rollback()
+            logger.warning("Analysis parsing failed for project %s: %s", project_id, e)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Analysis response could not be parsed. Please try again or check your data.",
+            ) from e
+        except Exception as e:
+            await db.rollback()
+            logger.exception("Analysis failed for project %s", project_id)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Analysis failed. The service may be temporarily unavailable. Your data was not changed. Please try again.",
+            ) from e
 
-    return AnalysisResponse.model_validate(analysis)
+    resp = AnalysisResponse.model_validate(analysis)
+    resp.strength_of_support = confidence_to_strength(analysis.confidence_score)
+    return resp
+
+
+def _analysis_to_response(analysis) -> AnalysisResponse:
+    """Build AnalysisResponse with strength_of_support derived from confidence_score."""
+    r = AnalysisResponse.model_validate(analysis)
+    r.strength_of_support = confidence_to_strength(analysis.confidence_score)
+    return r
 
 
 # ── GET /projects/{project_id}/analyses ──────────────────────────────────────
@@ -508,7 +540,7 @@ async def list_analyses(
 ) -> list[AnalysisResponse]:
     await _verify_project_ownership(db, project_id, current_user)
     analyses = await analysis_service.list_analyses(db, project_id)
-    return [AnalysisResponse.model_validate(a) for a in analyses]
+    return [_analysis_to_response(a) for a in analyses]
 
 
 # ── GET /analyses/{analysis_id} ──────────────────────────────────────────────
@@ -525,7 +557,7 @@ async def get_analysis(
     current_user: User = Depends(get_current_user),
 ) -> AnalysisResponse:
     analysis = await _verify_analysis_ownership(db, analysis_id, current_user)
-    return AnalysisResponse.model_validate(analysis)
+    return _analysis_to_response(analysis)
 
 
 # ── POST /analyses/{analysis_id}/generate-artifacts (Story 6-2) ───────────────

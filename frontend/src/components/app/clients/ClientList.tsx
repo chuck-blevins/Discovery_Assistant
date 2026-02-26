@@ -27,7 +27,7 @@ export function ClientList() {
     <div className="space-y-4">
       {/* Header row */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-zinc-900">Your Clients</h2>
+        <h1 className="text-2xl font-bold text-zinc-900">Your Clients</h1>
         <Button onClick={openCreate}>New Client</Button>
       </div>
 

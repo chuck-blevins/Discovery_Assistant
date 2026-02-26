@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { Archive, ArchiveRestore, BarChart3, Pencil, Trash2, Upload } from 'lucide-react'
 
 import {
   AlertDialog,
@@ -27,25 +28,37 @@ export function ProjectActions({ project, clientId, onEdit }: ProjectActionsProp
   const deleteMutation = useDeleteProject(clientId)
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <Button variant="outline" size="sm" onClick={() => navigate(`/${clientId}/${project.id}`)}>
-        View
+    <div className="flex items-center gap-1 flex-wrap">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => navigate(`/${clientId}/${project.id}#data-sources`)}
+        aria-label="Upload data"
+      >
+        <Upload className="size-4" />
       </Button>
-      <Button variant="outline" size="sm" onClick={() => navigate(`/${clientId}/${project.id}#data-sources`)}>
-        Upload
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => navigate(`/${clientId}/${project.id}/analyze`)}
+        aria-label="Analyze"
+      >
+        <BarChart3 className="size-4" />
       </Button>
-      <Button variant="outline" size="sm" onClick={() => navigate(`/${clientId}/${project.id}/analyze`)}>
-        Analyze
-      </Button>
-      <Button variant="outline" size="sm" onClick={onEdit}>
-        Edit
+      <Button variant="ghost" size="icon-sm" onClick={onEdit} aria-label="Edit project">
+        <Pencil className="size-4" />
       </Button>
 
       {project.status === 'active' ? (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm" disabled={archiveMutation.isPending}>
-              Archive
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              disabled={archiveMutation.isPending}
+              aria-label="Archive project"
+            >
+              <Archive className="size-4" />
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -68,19 +81,25 @@ export function ProjectActions({ project, clientId, onEdit }: ProjectActionsProp
         </AlertDialog>
       ) : (
         <Button
-          variant="outline"
-          size="sm"
+          variant="ghost"
+          size="icon-sm"
           onClick={() => archiveMutation.mutate(project.id)}
           disabled={archiveMutation.isPending}
+          aria-label="Unarchive project"
         >
-          Unarchive
+          <ArchiveRestore className="size-4" />
         </Button>
       )}
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="outline" size="sm" disabled={deleteMutation.isPending}>
-            Delete
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            disabled={deleteMutation.isPending}
+            aria-label="Delete project"
+          >
+            <Trash2 className="size-4" />
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>

@@ -172,3 +172,84 @@ async def get_project_cost_totals(
     rows = result.all()
     by_id = {row.project_id: float(row.total) for row in rows}
     return {pid: by_id.get(pid, 0.0) for pid in project_ids}
+
+
+async def get_latest_problem_validation_confidence(
+    db: AsyncSession,
+    project_ids: list[uuid.UUID],
+) -> dict[uuid.UUID, float | None]:
+    """Return confidence_score of the latest problem-validation analysis per project (Epic 2/3).
+
+    Keys are project_ids; value is None if no problem-validation analysis exists.
+    Uses DISTINCT ON (project_id) ... ORDER BY project_id, created_at DESC.
+    """
+    if not project_ids:
+        return {}
+    # Subquery: latest analysis per project for objective='problem-validation'
+    subq = (
+        select(Analysis.project_id, Analysis.confidence_score, Analysis.created_at)
+        .where(Analysis.project_id.in_(project_ids))
+        .where(Analysis.objective == "problem-validation")
+        .distinct(Analysis.project_id)
+        .order_by(Analysis.project_id, Analysis.created_at.desc())
+    )
+    result = await db.execute(subq)
+    rows = result.all()
+    by_id = {row.project_id: row.confidence_score for row in rows}
+    return {pid: by_id.get(pid) for pid in project_ids}
+
+
+async def get_latest_analysis_confidence(
+    db: AsyncSession,
+    project_ids: list[uuid.UUID],
+) -> dict[uuid.UUID, float | None]:
+    """Return confidence_score of the latest analysis per project (any objective).
+
+    Used for strength-of-support on list/detail so ICP, positioning, persona, etc.
+    all show Strong/Emerging/Weak from their latest run; previously only
+    problem-validation was used.
+    """
+    if not project_ids:
+        return {}
+    subq = (
+        select(Analysis.project_id, Analysis.confidence_score, Analysis.created_at)
+        .where(Analysis.project_id.in_(project_ids))
+        .distinct(Analysis.project_id)
+        .order_by(Analysis.project_id, Analysis.created_at.desc())
+    )
+    result = await db.execute(subq)
+    rows = result.all()
+    by_id = {row.project_id: row.confidence_score for row in rows}
+    return {pid: by_id.get(pid) for pid in project_ids}
+
+
+async def get_quick_view_quotes(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+) -> tuple[list[dict], dict | None]:
+    """Return quick-view quotes from latest problem-validation analysis (Epic 3 Story 3.2).
+
+    Returns (supporting_quotes, contradicting_quote).
+    - supporting_quotes: up to 2 insights with type='finding' (each {"text", "citation"}).
+    - contradicting_quote: first insight with type='contradiction' or None.
+    """
+    stmt = (
+        select(Analysis)
+        .options(selectinload(Analysis.insights))
+        .where(Analysis.project_id == project_id)
+        .where(Analysis.objective == "problem-validation")
+        .order_by(Analysis.created_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    analysis = result.scalar_one_or_none()
+    if not analysis or not analysis.insights:
+        return ([], None)
+    supporting: list[dict] = []
+    contradicting: dict | None = None
+    for ins in analysis.insights:
+        if ins.type == "finding" and len(supporting) < 2:
+            supporting.append({"text": ins.text, "citation": ins.citation})
+        elif ins.type == "contradiction" and contradicting is None:
+            contradicting = {"text": ins.text, "citation": ins.citation}
+    return (supporting, contradicting)

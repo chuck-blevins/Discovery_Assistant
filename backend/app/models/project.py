@@ -27,6 +27,7 @@ class Project(Base):
     target_segments: Mapped[list[str]] = mapped_column(
         ARRAY(Text()), nullable=False, default=list
     )
+    assumed_problem: Mapped[str | None] = mapped_column(Text(), nullable=True, default=None)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
     confidence_score: Mapped[float | None] = mapped_column(Float(), nullable=True, default=None)
     last_analyzed_at: Mapped[datetime | None] = mapped_column(

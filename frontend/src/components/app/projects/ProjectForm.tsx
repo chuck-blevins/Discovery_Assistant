@@ -17,8 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { useCreateProject, useUpdateProject } from '@/hooks/useProjects'
-import type { ProjectResponse } from '@/types/api'
+import type { ProjectCreate, ProjectResponse } from '@/types/api'
 
 const OBJECTIVE_OPTIONS = [
   { value: 'problem-validation', label: 'Problem Validation' },
@@ -31,9 +32,10 @@ interface FormState {
   name: string
   objective: string
   targetSegments: string
+  assumedProblem: string
 }
 
-const emptyForm: FormState = { name: '', objective: '', targetSegments: '' }
+const emptyForm: FormState = { name: '', objective: '', targetSegments: '', assumedProblem: '' }
 
 interface ProjectFormProps {
   open: boolean
@@ -47,6 +49,7 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
   const [form, setForm] = useState<FormState>(emptyForm)
   const [nameError, setNameError] = useState<string | null>(null)
   const [objectiveError, setObjectiveError] = useState<string | null>(null)
+  const [assumedProblemError, setAssumedProblemError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
 
   const createMutation = useCreateProject(clientId)
@@ -61,11 +64,13 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
               name: project.name,
               objective: project.objective,
               targetSegments: project.target_segments.join(', '),
+              assumedProblem: project.assumed_problem ?? '',
             }
           : emptyForm
       )
       setNameError(null)
       setObjectiveError(null)
+      setAssumedProblemError(null)
       setFormError(null)
     }
   }, [open, project])
@@ -75,6 +80,7 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
       setForm(emptyForm)
       setNameError(null)
       setObjectiveError(null)
+      setAssumedProblemError(null)
       setFormError(null)
     }
     onOpenChange(v)
@@ -84,6 +90,7 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
     e.preventDefault()
     setNameError(null)
     setObjectiveError(null)
+    setAssumedProblemError(null)
     setFormError(null)
 
     let hasError = false
@@ -95,6 +102,11 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
       setObjectiveError('Objective is required')
       hasError = true
     }
+    const isProblemValidation = form.objective === 'problem-validation'
+    if (isProblemValidation && !form.assumedProblem.trim()) {
+      setAssumedProblemError('Assumed problem is required for Problem Validation')
+      hasError = true
+    }
     if (hasError) return
 
     const segments = form.targetSegments
@@ -102,10 +114,13 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
       .map((s) => s.trim())
       .filter(Boolean)
 
-    const payload = {
+    const payload: ProjectCreate = {
       name: form.name.trim(),
       objective: form.objective as ProjectResponse['objective'],
       target_segments: segments,
+    }
+    if (isProblemValidation) {
+      payload.assumed_problem = form.assumedProblem.trim()
     }
 
     try {
@@ -177,6 +192,27 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
               </p>
             )}
           </div>
+
+          {form.objective === 'problem-validation' && (
+            <div className="space-y-1">
+              <Label htmlFor="project-assumed-problem">Assumed Problem</Label>
+              <Textarea
+                id="project-assumed-problem"
+                placeholder="e.g. Teams lose 3+ hours a week tracking RFP status"
+                value={form.assumedProblem}
+                onChange={(e) => setForm((f) => ({ ...f, assumedProblem: e.target.value }))}
+                rows={3}
+              />
+              {assumedProblemError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {assumedProblemError}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Required for Problem Validation — the hypothesis this project will test.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-1">
             <Label htmlFor="project-segments">Target Segments</Label>

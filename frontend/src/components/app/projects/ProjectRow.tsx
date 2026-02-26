@@ -1,8 +1,11 @@
+import { Link } from 'react-router-dom'
+
 import { Badge } from '@/components/ui/badge'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { OBJECTIVE_LABELS } from '@/lib/constants'
 import { getConfidenceColor } from './ConfidenceIndicator'
 import { ProjectActions } from './ProjectActions'
+import { StrengthBadge } from './StrengthBadge'
 import type { ProjectResponse } from '@/types/api'
 
 interface ProjectRowProps {
@@ -19,8 +22,20 @@ function formatCost(usd: number | null | undefined): string {
 export function ProjectRow({ project, clientId, onEdit }: ProjectRowProps) {
   return (
     <TableRow style={{ borderLeft: `4px solid ${getConfidenceColor(project.confidence_score)}` }}>
-      <TableCell className="w-1 p-0" />
-      <TableCell className="font-medium">{project.name}</TableCell>
+      <TableCell className="font-medium">
+        <Link
+          to={`/${clientId}/${project.id}`}
+          className="text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+        >
+          {project.name}
+        </Link>
+      </TableCell>
+      <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground" title={project.assumed_problem ?? undefined}>
+        {project.assumed_problem_truncated ?? '—'}
+      </TableCell>
+      <TableCell className="w-1 p-0" title="Strength of support">
+        <StrengthBadge strength={project.strength_of_support} />
+      </TableCell>
       <TableCell>
         <Badge variant="outline">{OBJECTIVE_LABELS[project.objective]}</Badge>
       </TableCell>
@@ -32,6 +47,7 @@ export function ProjectRow({ project, clientId, onEdit }: ProjectRowProps) {
         )}
       </TableCell>
       <TableCell>{new Date(project.updated_at).toLocaleDateString()}</TableCell>
+      <TableCell>{new Date(project.created_at).toLocaleDateString()}</TableCell>
       <TableCell className="tabular-nums">{formatCost(project.total_cost_usd)}</TableCell>
       <TableCell>
         <ProjectActions project={project} clientId={clientId} onEdit={() => onEdit(project)} />

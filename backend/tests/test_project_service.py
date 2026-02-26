@@ -73,13 +73,18 @@ class TestCreateProject:
 
         db = AsyncMock()
         client_id = uuid.uuid4()
-        data = ProjectCreate(name="Sprint 1", objective="problem-validation")
+        data = ProjectCreate(
+            name="Sprint 1",
+            objective="problem-validation",
+            assumed_problem="Teams lose time on RFPs",
+        )
 
         project = await create_project(db, client_id, data)
 
         assert project.name == "Sprint 1"
         assert project.status == "active"
         assert project.client_id == client_id
+        assert project.assumed_problem == "Teams lose time on RFPs"
         assert project.confidence_score is None
 
     @pytest.mark.asyncio
@@ -111,6 +116,22 @@ class TestCreateProject:
         project = await create_project(db, uuid.uuid4(), data)
 
         assert project.target_segments == ["SMB", "Enterprise"]
+
+    @pytest.mark.asyncio
+    async def test_create_stores_assumed_problem(self):
+        from app.schemas.project import ProjectCreate
+        from app.services.project_service import create_project
+
+        db = AsyncMock()
+        data = ProjectCreate(
+            name="PV Project",
+            objective="problem-validation",
+            assumed_problem="Customers need faster onboarding",
+        )
+
+        project = await create_project(db, uuid.uuid4(), data)
+
+        assert project.assumed_problem == "Customers need faster onboarding"
 
 
 # ============================================================================

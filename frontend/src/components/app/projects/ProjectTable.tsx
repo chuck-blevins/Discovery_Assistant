@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -65,11 +66,13 @@ export function ProjectTable({ clientId }: ProjectTableProps) {
               <caption className="sr-only">Projects for this client</caption>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-1 p-0"><span className="sr-only">Confidence</span></TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Assumed problem</TableHead>
+                  <TableHead className="w-1 p-0"><span className="sr-only">Strength</span></TableHead>
                   <TableHead>Objective</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Updated</TableHead>
+                  <TableHead>Created</TableHead>
                   <TableHead>Total Cost</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -77,10 +80,12 @@ export function ProjectTable({ clientId }: ProjectTableProps) {
               <TableBody>
                 {Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell className="w-1 p-0" />
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                    <TableCell className="w-1 p-0" />
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-28" /></TableCell>
@@ -120,11 +125,13 @@ export function ProjectTable({ clientId }: ProjectTableProps) {
               <caption className="sr-only">Projects for this client</caption>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-1 p-0"><span className="sr-only">Confidence</span></TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Assumed problem</TableHead>
+                  <TableHead className="w-1 p-0"><span className="sr-only">Strength</span></TableHead>
                   <TableHead>Objective</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Updated</TableHead>
+                  <TableHead>Created</TableHead>
                   <TableHead>Total Cost</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -146,13 +153,32 @@ export function ProjectTable({ clientId }: ProjectTableProps) {
                 style={{ borderLeft: `4px solid ${getConfidenceColor(p.confidence_score)}` }}
               >
                 <div className="flex-1">
-                  <p className="font-medium">{p.name}</p>
-                  <Badge variant="outline" className="mt-1">{OBJECTIVE_LABELS[p.objective]}</Badge>
-                  {p.status === 'archived' && (
-                    <Badge variant="outline" className="ml-2 bg-gray-100 text-gray-600 border-gray-300">Archived</Badge>
+                  <Link
+                    to={`/${clientId}/${p.id}`}
+                    className="font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+                  >
+                    {p.name}
+                  </Link>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <Badge variant="outline">{OBJECTIVE_LABELS[p.objective]}</Badge>
+                    {p.strength_of_support != null && (
+                      <span className="text-xs text-muted-foreground" aria-label={`Strength: ${p.strength_of_support}`}>
+                        {p.strength_of_support === 'strong' ? 'Strong' : p.strength_of_support === 'emerging' ? 'Emerging' : 'Weak'}
+                      </span>
+                    )}
+                    {p.status === 'archived' && (
+                      <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300">Archived</Badge>
+                    )}
+                  </div>
+                  {p.assumed_problem_truncated && (
+                    <p className="text-sm text-muted-foreground mt-1 truncate" title={p.assumed_problem ?? undefined}>
+                      {p.assumed_problem_truncated}
+                    </p>
                   )}
                   <p className="text-sm text-muted-foreground mt-1">
-                    {new Date(p.updated_at).toLocaleDateString()}
+                    Updated {new Date(p.updated_at).toLocaleDateString()}
+                    {' · '}
+                    Created {new Date(p.created_at).toLocaleDateString()}
                     {' · '}
                     {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(p.total_cost_usd ?? 0)}
                   </p>

@@ -206,7 +206,7 @@ export default function AnalysisPage() {
                     setResult(null)
                     setPageState('result')
                   }}
-                  className="text-left text-sm text-primary hover:underline"
+                  className="text-left text-sm text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
                 >
                   {new Date(a.created_at).toLocaleString()} — {a.confidence_score != null ? `${Math.round(a.confidence_score * 100)}%` : '—'}
                 </button>

@@ -1,3 +1,5 @@
+import { Archive, ArchiveRestore, Pencil, Trash2 } from 'lucide-react'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,34 +25,34 @@ export function ClientActions({ client, onEdit }: ClientActionsProps) {
   const deleteMutation = useDeleteClient()
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onEdit}
-        className="focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400"
-      >
-        Edit
+    <div className="flex items-center gap-1 flex-wrap">
+      <Button variant="ghost" size="icon-sm" onClick={onEdit} aria-label="Edit client">
+        <Pencil className="size-4" />
       </Button>
 
       <Button
-        variant="outline"
-        size="sm"
+        variant="ghost"
+        size="icon-sm"
         onClick={() => archiveMutation.mutate(client.id)}
         disabled={archiveMutation.isPending}
-        className="focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400"
+        aria-label={client.status === 'active' ? 'Archive client' : 'Unarchive client'}
       >
-        {client.status === 'active' ? 'Archive' : 'Unarchive'}
+        {client.status === 'active' ? (
+          <Archive className="size-4" />
+        ) : (
+          <ArchiveRestore className="size-4" />
+        )}
       </Button>
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button
-            variant="outline"
-            size="sm"
-            className="focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400"
+            variant="ghost"
+            size="icon-sm"
+            disabled={deleteMutation.isPending}
+            aria-label="Delete client"
           >
-            Delete
+            <Trash2 className="size-4" />
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
