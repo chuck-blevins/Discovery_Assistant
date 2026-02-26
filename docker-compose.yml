@@ -1,7 +1,7 @@
 # Discovery App — run backend API, frontend, Postgres, and MinIO.
 # From repo root: docker compose up --build
 # Frontend: http://localhost:5173  |  Backend: http://localhost:8000  |  MinIO console: http://localhost:9001
-# Copy backend/.env.example to backend/.env and set SECRET_KEY, CLAUDE_API_KEY, etc.
+# Copy backend/.env.sample to backend/.env and set SECRET_KEY, CLAUDE_API_KEY, etc.
 
 services:
   db:
@@ -87,7 +87,8 @@ services:
       - backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/discovery_app
-    command: ["alembic", "upgrade", "head"]
+    entrypoint: ["alembic"]
+    command: ["upgrade", "head"]
     profiles:
       - tools
 

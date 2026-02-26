@@ -22,6 +22,7 @@ async def create_project(
         name=data.name,
         objective=data.objective,
         target_segments=data.target_segments,
+        assumed_problem=getattr(data, "assumed_problem", None),
         status="active",
         confidence_score=None,
         last_analyzed_at=None,

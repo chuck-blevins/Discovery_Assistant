@@ -6,6 +6,9 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 
+# Strength-of-support for problem-validation (Epic 2/3): derived from confidence_score
+StrengthOfSupport = Literal["strong", "emerging", "weak"]
+
 
 class ValueDriverItem(BaseModel):
     text: str
@@ -51,6 +54,7 @@ class AnalysisResponse(BaseModel):
     project_id: uuid.UUID
     objective: str
     confidence_score: Optional[float]
+    strength_of_support: Optional[StrengthOfSupport] = None  # Epic 2/3: strong | emerging | weak
     tokens_used: Optional[int]
     cost_usd: Optional[float]
     insights: list[InsightResponse] = []

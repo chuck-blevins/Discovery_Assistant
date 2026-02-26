@@ -32,14 +32,26 @@ export interface ClientCreate {
 
 export type ClientUpdate = Partial<ClientCreate>
 
+/** Strength of support for problem-validation (Epic 2/3). */
+export type StrengthOfSupport = 'strong' | 'emerging' | 'weak'
+
 export interface ProjectResponse {
   id: string
   client_id: string
   name: string
   objective: 'problem-validation' | 'positioning' | 'persona-buildout' | 'icp-refinement'
   target_segments: string[]
+  assumed_problem?: string | null
+  /** Truncated for quick view (e.g. first 80 chars). */
+  assumed_problem_truncated?: string | null
   status: 'active' | 'archived'
   confidence_score: number | null
+  /** From latest problem-validation analysis (Epic 2/3). */
+  strength_of_support?: StrengthOfSupport | null
+  /** Epic 3: up to 2 supporting quotes from latest problem-validation analysis. */
+  supporting_quotes?: { text: string; citation: string | null }[]
+  /** Epic 3: one contradicting quote from latest problem-validation analysis. */
+  contradicting_quote?: { text: string; citation: string | null } | null
   last_analyzed_at: string | null
   total_cost_usd?: number | null
   created_at: string
@@ -51,6 +63,7 @@ export interface ProjectCreate {
   name: string
   objective: 'problem-validation' | 'positioning' | 'persona-buildout' | 'icp-refinement'
   target_segments?: string[]
+  assumed_problem?: string | null
 }
 
 export type ProjectUpdate = Partial<ProjectCreate>
@@ -121,6 +134,8 @@ export interface AnalysisResponse {
   project_id: string
   objective: string
   confidence_score: number | null
+  /** Problem-validation: strong | emerging | weak (Epic 2/3). */
+  strength_of_support?: StrengthOfSupport | null
   tokens_used: number | null
   cost_usd: number | null
   insights: InsightResponse[]

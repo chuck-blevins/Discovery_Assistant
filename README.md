@@ -6,15 +6,20 @@ Run the API, Postgres, and MinIO with Docker.
 
 **Setup**
 
-1. Copy the env sample and set required values:
+1. Copy the env sample and set required values (local secrets live in `backend/.env`, which is gitignored):
 
    ```bash
-   cp backend/.env.example backend/.env
+   cp backend/.env.sample backend/.env
    ```
 
 2. Edit `backend/.env` and set at least:
    - `SECRET_KEY` (e.g. `openssl rand -hex 32`)
    - `CLAUDE_API_KEY` (for analysis features)
+
+**Environment / secrets**
+
+- **Local development:** Use `backend/.env` (copy from `backend/.env.sample`). Never commit `.env`.
+- **CI / production (e.g. GitHub Actions, deploy):** Use your platform’s secrets (e.g. GitHub repository secrets and variables). Use the same variable names as in `backend/.env.sample`.
 
 **Deploy with Docker (from repo root)**
 

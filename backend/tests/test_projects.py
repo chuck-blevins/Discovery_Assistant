@@ -20,9 +20,34 @@ from pydantic import ValidationError
 class TestProjectCreateSchema:
     def test_valid_minimal(self):
         from app.schemas.project import ProjectCreate
-        req = ProjectCreate(name="Sprint 1", objective="problem-validation")
+        req = ProjectCreate(
+            name="Sprint 1",
+            objective="problem-validation",
+            assumed_problem="Teams lose time tracking RFPs",
+        )
         assert req.name == "Sprint 1"
         assert req.target_segments == []
+        assert req.assumed_problem == "Teams lose time tracking RFPs"
+
+    def test_problem_validation_requires_assumed_problem(self):
+        from app.schemas.project import ProjectCreate
+        with pytest.raises(ValidationError, match="assumed_problem"):
+            ProjectCreate(name="Sprint 1", objective="problem-validation")
+
+    def test_problem_validation_rejects_empty_assumed_problem(self):
+        from app.schemas.project import ProjectCreate
+        with pytest.raises(ValidationError, match="assumed_problem"):
+            ProjectCreate(
+                name="Sprint 1",
+                objective="problem-validation",
+                assumed_problem="   ",
+            )
+
+    def test_other_objectives_allow_none_assumed_problem(self):
+        from app.schemas.project import ProjectCreate
+        for obj in ("positioning", "persona-buildout", "icp-refinement"):
+            req = ProjectCreate(name="Test", objective=obj)
+            assert req.assumed_problem is None
 
     def test_valid_with_segments(self):
         from app.schemas.project import ProjectCreate
@@ -46,7 +71,11 @@ class TestProjectCreateSchema:
     def test_empty_name_rejected(self):
         from app.schemas.project import ProjectCreate
         with pytest.raises(ValidationError):
-            ProjectCreate(name="   ", objective="problem-validation")
+            ProjectCreate(
+                name="   ",
+                objective="problem-validation",
+                assumed_problem="Some hypothesis",
+            )
 
     def test_name_is_stripped(self):
         from app.schemas.project import ProjectCreate
@@ -61,7 +90,10 @@ class TestProjectCreateSchema:
     def test_all_valid_objectives_accepted(self):
         from app.schemas.project import VALID_OBJECTIVES, ProjectCreate
         for obj in VALID_OBJECTIVES:
-            req = ProjectCreate(name="Test", objective=obj)
+            kwargs = {"name": "Test", "objective": obj}
+            if obj == "problem-validation":
+                kwargs["assumed_problem"] = "Hypothesis for this project"
+            req = ProjectCreate(**kwargs)
             assert req.objective == obj
 
 
@@ -123,12 +155,14 @@ class TestProjectResponseSchema:
             name="Sprint 1",
             objective="problem-validation",
             target_segments=["SMB"],
+            assumed_problem="Some hypothesis",
             status="active",
             created_at=now,
             updated_at=now,
         )
         assert resp.name == "Sprint 1"
         assert resp.status == "active"
+        assert resp.assumed_problem == "Some hypothesis"
         assert resp.confidence_score is None
         assert resp.archived_at is None
 
@@ -141,6 +175,7 @@ class TestProjectResponseSchema:
             name="Sprint 1",
             objective="problem-validation",
             target_segments=[],
+            assumed_problem=None,
             status="active",
             confidence_score=0.75,
             last_analyzed_at=now,
@@ -283,7 +318,11 @@ class TestProjectRouteErrorHandling:
         mock_db = AsyncMock()
         mock_user = MagicMock()
         mock_user.id = uuid.uuid4()
-        data = ProjectCreate(name="Sprint 1", objective="problem-validation")
+        data = ProjectCreate(
+            name="Sprint 1",
+            objective="problem-validation",
+            assumed_problem="Hypothesis",
+        )
 
         with patch("app.api.routes.projects.client_service.get_client", new_callable=AsyncMock) as mock_get_client, \
              patch("app.api.routes.projects.project_service.create_project", new_callable=AsyncMock) as mock_create:

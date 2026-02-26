@@ -47,6 +47,7 @@ const existingProject: ProjectResponse = {
   name: 'Sprint 1 Discovery',
   objective: 'problem-validation',
   target_segments: ['SaaS founders', 'Mid-market CTOs'],
+  assumed_problem: 'Teams lose 3+ hours a week tracking RFP status',
   status: 'active',
   confidence_score: null,
   last_analyzed_at: null,
@@ -79,6 +80,20 @@ describe('ProjectForm — create mode', () => {
     expect(screen.getByText('Name is required')).toBeInTheDocument()
   })
 
+  it('shows inline error when objective is Problem Validation but assumed problem is empty', async () => {
+    renderWithProviders(
+      <ProjectForm open={true} onOpenChange={vi.fn()} clientId="client-1" />
+    )
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Sprint 1' } })
+    fireEvent.change(screen.getByTestId('objective-select'), {
+      target: { value: 'problem-validation' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /create project/i }))
+    await waitFor(() => {
+      expect(screen.getByText(/assumed problem is required/i)).toBeInTheDocument()
+    })
+  })
+
   it('calls onOpenChange(false) on successful create', async () => {
     vi.mocked(projectsApi.createProject).mockResolvedValue(existingProject)
     vi.mocked(projectsApi.listProjects).mockResolvedValue([])
@@ -93,6 +108,9 @@ describe('ProjectForm — create mode', () => {
     })
     fireEvent.change(screen.getByTestId('objective-select'), {
       target: { value: 'problem-validation' },
+    })
+    fireEvent.change(screen.getByLabelText(/assumed problem/i), {
+      target: { value: 'Teams lose time on RFPs' },
     })
     fireEvent.click(screen.getByRole('button', { name: /create project/i }))
 
@@ -116,6 +134,9 @@ describe('ProjectForm — create mode', () => {
     })
     fireEvent.change(screen.getByTestId('objective-select'), {
       target: { value: 'problem-validation' },
+    })
+    fireEvent.change(screen.getByLabelText(/assumed problem/i), {
+      target: { value: 'Some hypothesis' },
     })
     fireEvent.click(screen.getByRole('button', { name: /create project/i }))
 

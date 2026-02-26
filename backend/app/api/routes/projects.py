@@ -21,7 +21,7 @@ from app.db import get_db
 from app.models.user import User
 from app.schemas.icp import IcpResponse
 from app.schemas.persona import PersonaResponse
-from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
+from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, QuickViewQuote
 from app.services import (
     analysis_service,
     audit_service,
@@ -30,6 +30,7 @@ from app.services import (
     persona_service,
     project_service,
 )
+from app.utils.strength import confidence_to_strength, truncate_assumed_problem
 
 router = APIRouter(tags=["projects"])
 
@@ -97,9 +98,17 @@ async def list_projects(
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
     projects = await project_service.list_projects(db, client_id, include_archived)
-    totals = await analysis_service.get_project_cost_totals(db, [p.id for p in projects])
+    project_ids = [p.id for p in projects]
+    totals = await analysis_service.get_project_cost_totals(db, project_ids)
+    latest_confidence = await analysis_service.get_latest_analysis_confidence(db, project_ids)
     return [
-        _project_to_response(p).model_copy(update={"total_cost_usd": totals.get(p.id, 0.0)})
+        _project_to_response(p).model_copy(
+            update={
+                "total_cost_usd": totals.get(p.id, 0.0),
+                "strength_of_support": confidence_to_strength(latest_confidence.get(p.id)),
+                "assumed_problem_truncated": truncate_assumed_problem(p.assumed_problem),
+            }
+        )
         for p in projects
     ]
 
@@ -193,8 +202,16 @@ async def get_project(
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     totals = await analysis_service.get_project_cost_totals(db, [project.id])
+    latest_confidence = await analysis_service.get_latest_analysis_confidence(db, [project.id])
+    supporting, contradicting = await analysis_service.get_quick_view_quotes(db, project.id)
     return _project_to_response(project).model_copy(
-        update={"total_cost_usd": totals.get(project.id, 0.0)}
+        update={
+            "total_cost_usd": totals.get(project.id, 0.0),
+            "strength_of_support": confidence_to_strength(latest_confidence.get(project.id)),
+            "assumed_problem_truncated": truncate_assumed_problem(project.assumed_problem),
+            "supporting_quotes": [QuickViewQuote(**q) for q in supporting],
+            "contradicting_quote": QuickViewQuote(**contradicting) if contradicting else None,
+        }
     )
 
 

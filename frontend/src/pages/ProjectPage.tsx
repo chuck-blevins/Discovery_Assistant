@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getConfidenceColor } from '@/components/app/projects/ConfidenceIndicator'
+import { StrengthBadge } from '@/components/app/projects/StrengthBadge'
 import DataSourceSection from '@/components/app/data-sources/DataSourceSection'
 import { IcpCard } from '@/components/app/icp/IcpCard'
 import { PersonaCard } from '@/components/app/persona/PersonaCard'
@@ -59,6 +60,74 @@ export default function ProjectPage() {
             Segments: {project.target_segments.join(', ')}
           </p>
         )}
+        {/* Quick view: strength, assumed problem, quotes (Epic 3 Story 3.2) */}
+        {(project.strength_of_support != null ||
+          project.assumed_problem_truncated ||
+          (project.supporting_quotes?.length ?? 0) > 0 ||
+          project.contradicting_quote) && (
+          <div className="mt-2 space-y-2" role="region" aria-label="Quick view">
+            <div className="flex flex-wrap items-center gap-2">
+              {project.strength_of_support != null && (
+                <span className="flex items-center gap-1">
+                  <span className="text-sm text-muted-foreground">Strength:</span>
+                  <StrengthBadge strength={project.strength_of_support} />
+                </span>
+              )}
+              {project.assumed_problem_truncated && (
+                <p className="text-sm text-muted-foreground max-w-2xl" title={project.assumed_problem ?? undefined}>
+                  {project.assumed_problem_truncated}
+                </p>
+              )}
+            </div>
+            {project.supporting_quotes && project.supporting_quotes.length > 0 && (
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Supporting:</span>
+                <ul className="mt-1 space-y-1 list-none pl-0" aria-label="Supporting quotes">
+                  {project.supporting_quotes.map((q, i) => (
+                    <li key={i} className="text-sm border-l-2 border-green-600 pl-2">
+                      &ldquo;{q.text}&rdquo;
+                      {q.citation && (
+                        <cite className="block text-xs text-muted-foreground mt-0.5 not-italic">{q.citation}</cite>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {project.contradicting_quote && (
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Contradicting:</span>
+                <blockquote className="mt-1 text-sm border-l-2 border-amber-600 pl-2" aria-label="Contradicting quote">
+                  &ldquo;{project.contradicting_quote.text}&rdquo;
+                  {project.contradicting_quote.citation && (
+                    <cite className="block text-xs text-muted-foreground mt-0.5 not-italic">
+                      {project.contradicting_quote.citation}
+                    </cite>
+                  )}
+                </blockquote>
+              </div>
+            )}
+            {project.last_analyzed_at && (
+              <p className="text-sm">
+                <Link
+                  to={`/${clientId}/${projectId}/analyze`}
+                  className="text-primary underline hover:no-underline focus:outline focus:ring-2 focus:ring-primary rounded"
+                >
+                  View full analysis
+                </Link>
+                {' · '}
+                <span className="text-muted-foreground">
+                  Last analyzed: {new Date(project.last_analyzed_at).toLocaleDateString()}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
+        {!project.last_analyzed_at && project.confidence_score === null && project.assumed_problem_truncated && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Run analysis to see strength and quotes.
+          </p>
+        )}
         {project.confidence_score !== null && (
           <p
             className="mt-2 font-medium"
@@ -67,11 +136,15 @@ export default function ProjectPage() {
             {Math.round(project.confidence_score * 100)}% confidence
           </p>
         )}
-        {project.last_analyzed_at && (
-          <p className="text-sm text-muted-foreground">
-            Last analyzed: {new Date(project.last_analyzed_at).toLocaleDateString()}
-          </p>
-        )}
+        {project.last_analyzed_at &&
+          !project.strength_of_support &&
+          !project.assumed_problem_truncated &&
+          !(project.supporting_quotes?.length ?? 0) &&
+          !project.contradicting_quote && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Last analyzed: {new Date(project.last_analyzed_at).toLocaleDateString()}
+            </p>
+          )}
       </div>
       <section id="data-sources" aria-label="Data Sources">
         <h2 className="text-lg font-semibold mb-2">Data Sources</h2>
@@ -79,7 +152,7 @@ export default function ProjectPage() {
       </section>
       <section aria-label="Analysis" className="mt-6">
         <h2 className="text-lg font-semibold mb-2">Analysis</h2>
-        <div className="hidden md:block">
+        <div className="flex flex-wrap items-center gap-3">
           {hasDataSources ? (
             <Button asChild>
               <Link to={`/${clientId}/${projectId}/analyze`} state={{ autoStart: true }}>
@@ -93,6 +166,14 @@ export default function ProjectPage() {
             >
               Analyze
             </Button>
+          )}
+          {project.last_analyzed_at && (
+            <Link
+              to={`/${clientId}/${projectId}/analyze`}
+              className="text-sm text-primary underline hover:no-underline focus:outline focus:ring-2 focus:ring-primary rounded"
+            >
+              View full analysis
+            </Link>
           )}
         </div>
         {!hasDataSources && (

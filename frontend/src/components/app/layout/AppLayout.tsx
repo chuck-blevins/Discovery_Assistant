@@ -25,6 +25,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           id="main-content"
           className="flex-1 overflow-auto p-6"
           tabIndex={-1}
+          aria-label="Main content"
         >
           {children}
         </main>
