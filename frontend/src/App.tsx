@@ -8,6 +8,7 @@ import ClientPage from './pages/ClientPage'
 import ProjectPage from './pages/ProjectPage'
 import AnalysisPage from './pages/AnalysisPage'
 import HelpPage from './pages/HelpPage'
+import SettingsPage from './pages/SettingsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AppLayout } from './components/app/layout/AppLayout'
 
@@ -71,6 +72,16 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <HelpPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <SettingsPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

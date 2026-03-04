@@ -29,13 +29,17 @@ CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
 # Timeout for Claude API calls (seconds). Long prompts can take 60+ s; avoid indefinite hangs.
 _CLAUDE_TIMEOUT = float(os.getenv("CLAUDE_REQUEST_TIMEOUT", "180"))
 
-# Module-level singleton — avoids re-creating the HTTP client on every analysis call
-# Use CLAUDE_API_KEY (app .env) or ANTHROPIC_API_KEY (SDK default) so Docker/env works
-_api_key = os.getenv("CLAUDE_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
-_client = anthropic.AsyncAnthropic(
-    api_key=_api_key,
-    http_client=httpx.AsyncClient(timeout=_CLAUDE_TIMEOUT),
-)
+def _get_effective_api_key(override: str | None = None) -> str | None:
+    """Return DB-provided key if given, otherwise fall back to env vars."""
+    return override or os.getenv("CLAUDE_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+
+
+def _make_client(api_key: str | None = None, timeout: float | None = None) -> anthropic.AsyncAnthropic:
+    """Create a fresh Anthropic client per call so DB-stored keys take effect immediately."""
+    return anthropic.AsyncAnthropic(
+        api_key=_get_effective_api_key(api_key),
+        http_client=httpx.AsyncClient(timeout=timeout or _CLAUDE_TIMEOUT),
+    )
 
 # ── Model pricing (USD per token) ────────────────────────────────────────────
 
@@ -247,9 +251,12 @@ async def _invoke_claude(
     *,
     model: str | None = None,
     max_tokens: int = 4096,
+    api_key: str | None = None,
+    timeout: float | None = None,
 ):
     """Single Claude API call. Traced as LLM run in LangSmith when LANGSMITH_TRACING=true."""
-    message = await _client.messages.create(
+    client = _make_client(api_key=api_key, timeout=timeout)
+    message = await client.messages.create(
         model=model or CLAUDE_MODEL,
         max_tokens=max_tokens,
         system=system,
@@ -450,6 +457,11 @@ async def run_analysis(
     assumed_problem: str | None,
     target_segments: list[str],
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
+    *,
+    system_prompt: str | None = None,
+    model: str | None = None,
+    api_key: str | None = None,
+    timeout: float | None = None,
 ) -> dict:
     """Run problem validation analysis using Claude.
 
@@ -465,8 +477,11 @@ async def run_analysis(
     )
 
     message = await _invoke_claude(
-        system=PROBLEM_VALIDATION_SYSTEM_PROMPT,
+        system=system_prompt or PROBLEM_VALIDATION_SYSTEM_PROMPT,
         user_content=prompt,
+        model=model,
+        api_key=api_key,
+        timeout=timeout,
     )
 
     raw_text = message.content[0].text
@@ -512,6 +527,11 @@ _POSITIONING_REQUIRED_KEYS = {
 async def run_positioning_analysis(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
+    *,
+    system_prompt: str | None = None,
+    model: str | None = None,
+    api_key: str | None = None,
+    timeout: float | None = None,
 ) -> dict:
     """Run positioning discovery analysis using Claude.
 
@@ -525,8 +545,11 @@ async def run_positioning_analysis(
     prompt = build_positioning_prompt(objective, data_sources)
 
     message = await _invoke_claude(
-        system=POSITIONING_SYSTEM_PROMPT,
+        system=system_prompt or POSITIONING_SYSTEM_PROMPT,
         user_content=prompt,
+        model=model,
+        api_key=api_key,
+        timeout=timeout,
     )
 
     raw_text = message.content[0].text
@@ -588,6 +611,11 @@ _QUALITY_VALUES = {"low", "medium", "high"}
 async def run_persona_analysis(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
+    *,
+    system_prompt: str | None = None,
+    model: str | None = None,
+    api_key: str | None = None,
+    timeout: float | None = None,
 ) -> dict:
     """Run persona origination analysis using Claude.
 
@@ -600,8 +628,11 @@ async def run_persona_analysis(
     prompt = build_persona_prompt(objective, data_sources)
 
     message = await _invoke_claude(
-        system=PERSONA_SYSTEM_PROMPT,
+        system=system_prompt or PERSONA_SYSTEM_PROMPT,
         user_content=prompt,
+        model=model,
+        api_key=api_key,
+        timeout=timeout,
     )
 
     raw_text = message.content[0].text
@@ -664,6 +695,11 @@ _ICP_QUALITY_SCORE = {"low": 0.33, "medium": 0.66, "high": 1.0}
 async def run_icp_analysis(
     objective: str,
     data_sources: list[tuple[str, str]],  # [(filename, raw_text), ...]
+    *,
+    system_prompt: str | None = None,
+    model: str | None = None,
+    api_key: str | None = None,
+    timeout: float | None = None,
 ) -> dict:
     """Run ICP refinement analysis using Claude.
 
@@ -676,8 +712,11 @@ async def run_icp_analysis(
     prompt = build_icp_prompt(objective, data_sources)
 
     message = await _invoke_claude(
-        system=ICP_SYSTEM_PROMPT,
+        system=system_prompt or ICP_SYSTEM_PROMPT,
         user_content=prompt,
+        model=model,
+        api_key=api_key,
+        timeout=timeout,
     )
 
     raw_text = message.content[0].text
@@ -780,6 +819,11 @@ async def run_recommendations_generation(
     objective: str,
     confidence_score: float,
     source_count: int,
+    *,
+    system_prompt: str | None = None,
+    model: str | None = None,
+    api_key: str | None = None,
+    timeout: float | None = None,
 ) -> dict:
     """Generate next-step recommendations and script/template content (Story 6-1).
 
@@ -798,8 +842,11 @@ async def run_recommendations_generation(
     )
 
     message = await _invoke_claude(
-        system=RECOMMENDATIONS_SYSTEM_PROMPT,
+        system=system_prompt or RECOMMENDATIONS_SYSTEM_PROMPT,
         user_content=prompt,
+        model=model,
+        api_key=api_key,
+        timeout=timeout,
     )
 
     raw_text = message.content[0].text
