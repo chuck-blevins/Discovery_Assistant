@@ -2,6 +2,8 @@
 
 An AI-powered product discovery platform for managing clients through ICP definition, persona buildout, positioning, and general discovery research — built for consulting workflows.
 
+**[User Guide →](docs/user-guide.md)**
+
 ---
 
 ## Context
