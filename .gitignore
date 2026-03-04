@@ -1,6 +1,10 @@
-# Python virtual environments
+# Python virtual environments (do not track; use requirements.txt to reproduce)
+venv
 venv/
-backend/venv/
+.venv/
+backend/venv
+backend/venv/*
+backend/.venv*/
 .env
 backend/.env
 .env.*
@@ -59,4 +63,7 @@ backend/.env
 
 # Allow committed safe env sample
 !backend/.env.sample
+.DS_Store
+.DS_Store
+backend/.venv/bin/activate
 .DS_Store

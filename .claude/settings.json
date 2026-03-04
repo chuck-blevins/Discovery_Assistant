@@ -6,8 +6,7 @@
       "Bash(npm test -- --run src/tests/components/projects/ProjectTable.test.tsx)",
       "Bash(npm test -- --run src/tests/components/projects/ProjectForm.test.tsx)",
       "Bash(npx vitest run --reporter=verbose)",
-      "Bash(npx vitest run)",
-      "Bash(xargs ls -lh)"
+      "Bash(npx vitest run)"
     ]
   }
 }
