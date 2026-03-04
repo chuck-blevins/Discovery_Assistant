@@ -2,7 +2,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSidebarStore } from '@/stores/useSidebarStore'
-import { api } from '@/lib/api'
+import { logout } from '@/api/client'
 
 export function TopBar() {
   const navigate = useNavigate()
@@ -11,7 +11,7 @@ export function TopBar() {
 
   const handleLogout = async () => {
     try {
-      await api.post('/auth/logout')
+      await logout()
     } catch {
       // ignore logout errors — proceed to redirect
     }

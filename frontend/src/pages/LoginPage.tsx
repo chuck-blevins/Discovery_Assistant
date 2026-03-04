@@ -19,7 +19,8 @@ export default function LoginPage() {
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true')
       }
-      navigate('/dashboard')
+      // Token is now in memory + localStorage; SPA navigate so same JS context uses it
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {

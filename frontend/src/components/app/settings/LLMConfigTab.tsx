@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { LLMSettingsResponse } from '@/types/api'
 import { Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { getLLMSettings, updateLLMSettings } from '@/api/settings'
@@ -27,15 +28,17 @@ export function LLMConfigTab({ isSetup = false }: { isSetup?: boolean }) {
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
   const [timeout, setTimeout] = useState<number | null>(null)
 
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings, isLoading } = useQuery<LLMSettingsResponse>({
     queryKey: ['settings', 'llm'],
     queryFn: getLLMSettings,
-    onSuccess: (data) => {
-      if (selectedModel === null) setSelectedModel(data.model)
-      if (timeout === null) setTimeout(data.timeout_seconds)
-      if (!data.api_key_is_set) setApiKeyMode('editing')
-    },
   })
+
+  useEffect(() => {
+    if (settings == null) return
+    if (selectedModel === null) setSelectedModel(settings.model)
+    if (timeout === null) setTimeout(settings.timeout_seconds)
+    if (!settings.api_key_is_set) setApiKeyMode('editing')
+  }, [settings])
 
   const mutation = useMutation({
     mutationFn: () =>

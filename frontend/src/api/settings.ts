@@ -7,29 +7,24 @@ import type {
 } from '@/types/api'
 
 export async function getPrompts(): Promise<PromptTemplateResponse[]> {
-  const res = await api.get('/settings/prompts')
-  return res.data
+  return api.get<PromptTemplateResponse[]>('/settings/prompts')
 }
 
 export async function updatePrompt(
   analysisType: string,
   data: PromptUpdate
 ): Promise<PromptTemplateResponse> {
-  const res = await api.put(`/settings/prompts/${analysisType}`, data)
-  return res.data
+  return api.put<PromptTemplateResponse>(`/settings/prompts/${analysisType}`, data)
 }
 
 export async function resetPrompt(analysisType: string): Promise<PromptTemplateResponse> {
-  const res = await api.post(`/settings/prompts/${analysisType}/reset`)
-  return res.data
+  return api.post<PromptTemplateResponse>(`/settings/prompts/${analysisType}/reset`)
 }
 
 export async function getLLMSettings(): Promise<LLMSettingsResponse> {
-  const res = await api.get('/settings/llm')
-  return res.data
+  return api.get<LLMSettingsResponse>('/settings/llm')
 }
 
 export async function updateLLMSettings(data: LLMSettingsUpdate): Promise<LLMSettingsResponse> {
-  const res = await api.put('/settings/llm', data)
-  return res.data
+  return api.put<LLMSettingsResponse>('/settings/llm', data)
 }
