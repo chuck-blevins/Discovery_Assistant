@@ -1,8 +1,0 @@
-#!/bin/sh
-'''exec' "/Users/chuckblevins/Library/CloudStorage/SynologyDrive-Obsidian/03 Projects/Code/Discovery_app/backend/.venv310/bin/python3.10" "$0" "$@"
-' '''
-import sys
-from mypy.stubgen import main
-if __name__ == '__main__':
-    sys.argv[0] = sys.argv[0].removesuffix('.exe')
-    sys.exit(main())
