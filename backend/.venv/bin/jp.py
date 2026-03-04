@@ -1,4 +1,4 @@
-#!/Users/chuckblevins/Library/CloudStorage/SynologyDrive-Obsidian/03 Projects/Code/Discovery_app/backend/.venv/bin/python3
+#!/Users/chuckblevins/Library/CloudStorage/SynologyDrive-Obsidian/03 Projects/Code/Discovery_app/backend/venv/bin/python3
 
 import sys
 import json
