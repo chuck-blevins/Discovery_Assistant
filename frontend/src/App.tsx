@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage'
 import ClientPage from './pages/ClientPage'
 import ProjectPage from './pages/ProjectPage'
 import AnalysisPage from './pages/AnalysisPage'
+import HelpPage from './pages/HelpPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AppLayout } from './components/app/layout/AppLayout'
 
@@ -59,6 +60,17 @@ export default function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <AnalysisPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/help"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <HelpPage />
                   </AppLayout>
                 </ProtectedRoute>
               }
