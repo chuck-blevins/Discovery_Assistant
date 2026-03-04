@@ -1,8 +1,4 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
-const TOKEN_KEY = 'discovery_access_token'
-
-/** In-memory token so redirect/navigate in same session has token before localStorage is read. */
-let memoryToken: string | null = null
 
 export interface UserInfo {
   id: string
@@ -26,42 +22,29 @@ export interface ApiError {
   detail: string | { msg: string; loc: string[] }[]
 }
 
-export function getStoredToken(): string | null {
-  return memoryToken ?? localStorage.getItem(TOKEN_KEY)
-}
-
-function request<T>(
+async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = getStoredToken()
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
-  }
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-  return fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
-    credentials: 'include',
-    headers,
-  }).then(async (res) => {
-
-    if (!res.ok) {
-      if (res.status === 401) {
-        memoryToken = null
-        localStorage.removeItem(TOKEN_KEY)
-      }
-      const body: ApiError = await res.json().catch(() => ({ detail: 'Network error' }))
-      const message =
-        typeof body.detail === 'string'
-          ? body.detail
-          : Array.isArray(body.detail) ? body.detail.map((e: { msg: string }) => e.msg).join(', ') : 'Request failed'
-      throw new Error(message)
-    }
-    return res.json() as Promise<T>
+    credentials: 'include', // send/receive HTTP-only cookies
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   })
+
+  if (!res.ok) {
+    const body: ApiError = await res.json().catch(() => ({ detail: 'Network error' }))
+    const message =
+      typeof body.detail === 'string'
+        ? body.detail
+        : body.detail.map((e) => e.msg).join(', ')
+    throw new Error(message)
+  }
+
+  return res.json() as Promise<T>
 }
 
 export async function signup(email: string, password: string): Promise<SignupResponse> {
@@ -72,26 +55,14 @@ export async function signup(email: string, password: string): Promise<SignupRes
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const data = await request<LoginResponse>('/auth/login', {
+  return request<LoginResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
-  memoryToken = data.access_token
-  localStorage.setItem(TOKEN_KEY, data.access_token)
-  return data
-}
-
-export function clearStoredToken(): void {
-  memoryToken = null
-  localStorage.removeItem(TOKEN_KEY)
 }
 
 export async function logout(): Promise<void> {
-  try {
-    await request('/auth/logout', { method: 'POST' })
-  } finally {
-    clearStoredToken()
-  }
+  await request('/auth/logout', { method: 'POST' })
 }
 
 export async function validateSession(): Promise<UserInfo> {

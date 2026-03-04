@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { useSidebarStore } from '@/stores/useSidebarStore'
 import { useClientFormStore } from '@/stores/useClientFormStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { LayoutDashboard, ChevronLeft, ChevronRight, Plus, BookOpen, SlidersHorizontal } from 'lucide-react'
+import { LayoutDashboard, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 
 export function ClientSidebar() {
   const location = useLocation()
@@ -12,8 +12,6 @@ export function ClientSidebar() {
   const toggle = useSidebarStore((s) => s.toggle)
   const openCreate = useClientFormStore((s) => s.openCreate)
   const isDashboard = location.pathname === '/'
-  const isHelp = location.pathname === '/help'
-  const isSettings = location.pathname === '/settings'
 
   return (
     <aside
@@ -68,72 +66,7 @@ export function ClientSidebar() {
         </ul>
       </nav>
 
-      {/* Footer: settings + help + collapse toggle + new client */}
-      <div className="border-t border-zinc-800 p-2 space-y-1">
-        {/* Settings link */}
-        {collapsed ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/settings"
-                className={cn(
-                  'flex items-center justify-center w-full rounded p-2',
-                  'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400',
-                  isSettings && 'bg-zinc-800'
-                )}
-                aria-label="Settings"
-              >
-                <SlidersHorizontal className="w-5 h-5 text-zinc-300" aria-hidden="true" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Settings</TooltipContent>
-          </Tooltip>
-        ) : (
-          <Link
-            to="/settings"
-            className={cn(
-              'flex items-center w-full rounded px-3 py-2 text-sm',
-              'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400',
-              isSettings && 'bg-zinc-800'
-            )}
-          >
-            <SlidersHorizontal className="w-4 h-4 mr-3 text-zinc-300 shrink-0" aria-hidden="true" />
-            <span className="text-zinc-200">Settings</span>
-          </Link>
-        )}
-        {/* Help / User Guide link */}
-        {collapsed ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/help"
-                className={cn(
-                  'flex items-center justify-center w-full rounded p-2',
-                  'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400',
-                  isHelp && 'bg-zinc-800'
-                )}
-                aria-label="User Guide"
-              >
-                <BookOpen className="w-5 h-5 text-zinc-300" aria-hidden="true" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">User Guide</TooltipContent>
-          </Tooltip>
-        ) : (
-          <Link
-            to="/help"
-            className={cn(
-              'flex items-center w-full rounded px-3 py-2 text-sm',
-              'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400',
-              isHelp && 'bg-zinc-800'
-            )}
-          >
-            <BookOpen className="w-4 h-4 mr-3 text-zinc-300 shrink-0" aria-hidden="true" />
-            <span className="text-zinc-200">User Guide</span>
-          </Link>
-        )}
-      </div>
-
+      {/* Footer: collapse toggle + new client */}
       <div className="border-t border-zinc-800 p-2 space-y-1">
         {/* New Client button */}
         {collapsed ? (

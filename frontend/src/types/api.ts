@@ -222,26 +222,3 @@ export function getConfidenceState(score: number | null): ConfidenceState {
   if (score < 0.75) return 'amber'
   return 'green'
 }
-
-export interface PromptTemplateResponse {
-  analysis_type: string
-  system_prompt: string
-  updated_at: string
-}
-
-export interface LLMSettingsResponse {
-  model: string
-  timeout_seconds: number
-  api_key_masked: string | null
-  api_key_is_set: boolean
-}
-
-export interface PromptUpdate {
-  system_prompt: string
-}
-
-export interface LLMSettingsUpdate {
-  model?: string
-  timeout_seconds?: number
-  api_key?: string
-}
