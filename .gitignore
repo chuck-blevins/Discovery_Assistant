@@ -67,3 +67,4 @@ backend/.env
 .DS_Store
 backend/.venv/bin/activate
 .DS_Store
+.DS_Store
