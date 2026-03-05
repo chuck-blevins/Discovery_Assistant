@@ -148,7 +148,7 @@ export default function ProjectPage() {
       </div>
       <section id="data-sources" aria-label="Data Sources">
         <h2 className="text-lg font-semibold mb-2">Data Sources</h2>
-        <DataSourceSection projectId={projectId ?? ''} />
+        <DataSourceSection projectId={projectId ?? ''} clientId={clientId} />
       </section>
       <section aria-label="Analysis" className="mt-6">
         <h2 className="text-lg font-semibold mb-2">Analysis</h2>

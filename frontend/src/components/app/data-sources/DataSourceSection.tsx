@@ -8,9 +8,11 @@ type Tab = 'upload' | 'paste'
 
 interface DataSourceSectionProps {
   projectId: string
+  /** When provided, upload zone shows Analyze button linking to project analyze page. */
+  clientId?: string
 }
 
-export default function DataSourceSection({ projectId }: DataSourceSectionProps) {
+export default function DataSourceSection({ projectId, clientId }: DataSourceSectionProps) {
   const [tab, setTab] = useState<Tab>('upload')
 
   return (
@@ -55,7 +57,7 @@ export default function DataSourceSection({ projectId }: DataSourceSectionProps)
           aria-labelledby={tab === 'upload' ? 'ds-tab-upload' : 'ds-tab-paste'}
         >
           {tab === 'upload' ? (
-            <FileUploadZone projectId={projectId} />
+            <FileUploadZone projectId={projectId} clientId={clientId} />
           ) : (
             <PasteDataSourceForm projectId={projectId} />
           )}

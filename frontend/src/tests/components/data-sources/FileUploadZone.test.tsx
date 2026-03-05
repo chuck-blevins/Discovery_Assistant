@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { axe } from 'vitest-axe'
+import { useNavigate } from 'react-router-dom'
 import { FileUploadZone } from '@/components/app/data-sources/FileUploadZone'
 import { renderWithProviders } from '@/tests/utils'
 
@@ -11,6 +12,11 @@ vi.mock('@/api/dataSources', () => ({
   pasteDataSource: vi.fn(),
   getDataSourcePreview: vi.fn(),
 }))
+
+vi.mock('react-router-dom', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('react-router-dom')>()
+  return { ...mod, useNavigate: vi.fn() }
+})
 
 import * as dataSourcesApi from '@/api/dataSources'
 
@@ -43,10 +49,25 @@ describe('FileUploadZone', () => {
     expect(screen.getByLabelText(/purpose/i)).toBeInTheDocument()
   })
 
-  it('renders upload button (disabled when no files selected)', () => {
+  it('hides Upload and Analyze buttons when no files selected', () => {
     renderWithProviders(<FileUploadZone projectId="proj-1" />)
-    const btn = screen.getByRole('button', { name: /upload/i })
-    expect(btn).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /upload/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /analyze/i })).not.toBeInTheDocument()
+  })
+
+  it('shows helper text below document selection', () => {
+    renderWithProviders(<FileUploadZone projectId="proj-1" />)
+    expect(screen.getByText(/you can select additional documents before uploading/i)).toBeInTheDocument()
+  })
+
+  it('shows Upload button when at least one file selected', async () => {
+    const { container } = renderWithProviders(<FileUploadZone projectId="proj-1" />)
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['content'], 'doc.pdf', { type: 'application/pdf' })
+    fireEvent.change(input, { target: { files: [file] } })
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /upload \(\d+\)/i })).toBeInTheDocument()
+    })
   })
 
   it('shows error for unsupported file type on drag-and-drop', async () => {
@@ -80,7 +101,7 @@ describe('FileUploadZone', () => {
     const file = new File(['content'], 'interview.pdf', { type: 'application/pdf' })
     fireEvent.change(input, { target: { files: [file] } })
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /upload/i })).not.toBeDisabled()
+      expect(screen.getByRole('button', { name: /upload \(\d+\)/i })).toBeInTheDocument()
     })
     fireEvent.submit(container.querySelector('form')!)
     await waitFor(() => {
@@ -89,6 +110,63 @@ describe('FileUploadZone', () => {
         [file],
         expect.any(Object)
       )
+    })
+  })
+
+  it('renders metadata fields before document selection (element order)', () => {
+    const { container } = renderWithProviders(<FileUploadZone projectId="proj-1" />)
+    const form = container.querySelector('form')!
+    const firstSection = form.children[0]
+    const dropZone = form.querySelector('[aria-label="File drop zone"]')
+    expect(firstSection).toContainElement(screen.getByLabelText(/collected date/i))
+    expect(dropZone).toBeInTheDocument()
+    expect(form.contains(dropZone)).toBe(true)
+    const dropZoneParentIdx = Array.from(form.children).findIndex((el) => el.contains(dropZone))
+    expect(dropZoneParentIdx).toBeGreaterThan(0)
+  })
+
+  it('shows Analyze button when clientId provided and files selected', async () => {
+    const { container } = renderWithProviders(
+      <FileUploadZone projectId="proj-1" clientId="client-1" />,
+      { route: '/client-1/proj-1' }
+    )
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['c'], 'doc.pdf', { type: 'application/pdf' })
+    fireEvent.change(input, { target: { files: [file] } })
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /go to analysis/i })).toBeInTheDocument()
+    })
+  })
+
+  it('navigates to analyze page when Analyze button is clicked', async () => {
+    const navigateMock = vi.fn()
+    vi.mocked(useNavigate).mockReturnValue(navigateMock)
+    const { container } = renderWithProviders(
+      <FileUploadZone projectId="proj-1" clientId="client-1" />,
+      { route: '/client-1/proj-1' }
+    )
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['c'], 'doc.pdf', { type: 'application/pdf' })
+    fireEvent.change(input, { target: { files: [file] } })
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /go to analysis/i })).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByRole('button', { name: /go to analysis/i }))
+    expect(navigateMock).toHaveBeenCalledWith('/client-1/proj-1/analyze')
+  })
+
+  it('hides Upload and Analyze buttons when file selection is cleared', async () => {
+    const { container } = renderWithProviders(<FileUploadZone projectId="proj-1" clientId="client-1" />)
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['c'], 'doc.pdf', { type: 'application/pdf' })
+    fireEvent.change(input, { target: { files: [file] } })
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /upload/i })).toBeInTheDocument()
+    })
+    fireEvent.change(input, { target: { files: [] } })
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /upload/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /analyze/i })).not.toBeInTheDocument()
     })
   })
 
