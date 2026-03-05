@@ -3,11 +3,15 @@ import { Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSidebarStore } from '@/stores/useSidebarStore'
 import { api } from '@/lib/api'
+import { useClient } from '@/hooks/useClients'
+import { useProject } from '@/hooks/useProjects'
 
 export function TopBar() {
   const navigate = useNavigate()
   const params = useParams<{ clientId?: string; projectId?: string }>()
   const setCollapsed = useSidebarStore((s) => s.setCollapsed)
+  const { data: client } = useClient(params.clientId)
+  const { data: project } = useProject(params.projectId)
 
   const handleLogout = async () => {
     try {
@@ -50,7 +54,7 @@ export function TopBar() {
             </li>
             <li aria-hidden="true">/</li>
             <li className="text-zinc-900 font-medium" aria-current="page">
-              {params.clientId}
+              {client?.name ?? 'Unknown Client'}
             </li>
           </ol>
         )}
@@ -64,12 +68,12 @@ export function TopBar() {
             <li aria-hidden="true">/</li>
             <li>
               <Link to={`/${params.clientId}`} className="hover:text-zinc-900">
-                {params.clientId}
+                {client?.name ?? 'Unknown Client'}
               </Link>
             </li>
             <li aria-hidden="true">/</li>
             <li className="text-zinc-900 font-medium" aria-current="page">
-              {params.projectId}
+              {project?.name ?? 'Unknown Project'}
             </li>
           </ol>
         )}
