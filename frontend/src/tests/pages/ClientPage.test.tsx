@@ -9,8 +9,12 @@ vi.mock('@/hooks/useClients', () => ({
   useClient: vi.fn(),
 }))
 
+let capturedProjectTableProps: { clientId?: string; clientName?: string } = {}
 vi.mock('@/components/app/projects/ProjectTable', () => ({
-  ProjectTable: () => <div data-testid="project-table" />,
+  ProjectTable: (props: { clientId: string; clientName?: string }) => {
+    capturedProjectTableProps = props
+    return <div data-testid="project-table" />
+  },
 }))
 
 vi.mock('sonner', () => ({
@@ -66,6 +70,7 @@ function renderClientPage(locationState?: Record<string, unknown>) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  capturedProjectTableProps = {}
   vi.mocked(useClient).mockReturnValue({
     data: mockClient,
     isLoading: false,
@@ -124,6 +129,16 @@ describe('ClientPage — rendering', () => {
       expect(screen.getByText('Acme Corp')).toBeInTheDocument()
     })
     expect(screen.getByTestId('project-table')).toBeInTheDocument()
+  })
+
+  it('passes clientId and clientName to ProjectTable', async () => {
+    renderClientPage()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('project-table')).toBeInTheDocument()
+    })
+    expect(capturedProjectTableProps.clientId).toBe('client-1')
+    expect(capturedProjectTableProps.clientName).toBe('Acme Corp')
   })
 
   it('renders loading skeleton when isLoading', () => {

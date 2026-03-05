@@ -22,9 +22,10 @@ import { ProjectRow } from './ProjectRow'
 
 interface ProjectTableProps {
   clientId: string
+  clientName?: string
 }
 
-export function ProjectTable({ clientId }: ProjectTableProps) {
+export function ProjectTable({ clientId, clientName }: ProjectTableProps) {
   const [includeArchived, setIncludeArchived] = useState(false)
   const { open, project, openCreate, openEdit, close } = useProjectFormStore()
   const { data: projects, isLoading, isError } = useProjects(clientId, includeArchived)
@@ -111,9 +112,14 @@ export function ProjectTable({ clientId }: ProjectTableProps) {
       )}
 
       {!isLoading && !isError && projects && projects.length === 0 && (
-        <div className="text-center py-8 space-y-3">
-          <p>No projects yet.</p>
-          <Button onClick={openCreate}>New Project</Button>
+        <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">No projects yet</h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Projects let you organize discovery work under {clientName ?? 'this client'}.
+            </p>
+          </div>
+          <Button size="lg" onClick={openCreate}>Create First Project</Button>
         </div>
       )}
 

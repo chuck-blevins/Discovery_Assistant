@@ -51,7 +51,7 @@ export default function ClientPage() {
           <p className="text-muted-foreground">{client.market_type}</p>
         )}
       </div>
-      <ProjectTable clientId={client.id} />
+      <ProjectTable clientId={client.id} clientName={client.name} />
     </>
   )
 }

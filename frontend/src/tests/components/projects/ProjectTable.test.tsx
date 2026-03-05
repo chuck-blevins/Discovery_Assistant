@@ -52,13 +52,33 @@ describe('ProjectTable', () => {
     expect(skeletons.length).toBeGreaterThan(0)
   })
 
-  it('shows empty state when no projects', async () => {
+  it('shows empty state CTA with client name when no projects', async () => {
+    vi.mocked(projectsApi.listProjects).mockResolvedValue([])
+    renderWithProviders(<ProjectTable clientId="client-1" clientName="Acme Corp" />)
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /no projects yet/i })).toBeInTheDocument()
+    })
+    expect(screen.getByRole('button', { name: /create first project/i })).toBeInTheDocument()
+    expect(screen.getByText(/projects let you organize discovery work under Acme Corp/i)).toBeInTheDocument()
+  })
+
+  it('shows generic fallback in empty state when clientName not provided', async () => {
     vi.mocked(projectsApi.listProjects).mockResolvedValue([])
     renderWithProviders(<ProjectTable clientId="client-1" />)
     await waitFor(() => {
-      expect(screen.getByText('No projects yet.')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /no projects yet/i })).toBeInTheDocument()
     })
-    expect(screen.getAllByRole('button', { name: /new project/i }).length).toBeGreaterThan(0)
+    expect(screen.getByText(/projects let you organize discovery work under this client/i)).toBeInTheDocument()
+  })
+
+  it('clicking "Create First Project" opens the project form', async () => {
+    vi.mocked(projectsApi.listProjects).mockResolvedValue([])
+    renderWithProviders(<ProjectTable clientId="client-1" clientName="Acme Corp" />)
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /create first project/i })).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByRole('button', { name: /create first project/i }))
+    expect(useProjectFormStore.getState().open).toBe(true)
   })
 
   it('renders project names and objective badges', async () => {
@@ -127,9 +147,9 @@ describe('ProjectTable', () => {
 
   it('has zero axe violations on empty state', async () => {
     vi.mocked(projectsApi.listProjects).mockResolvedValue([])
-    const { container } = renderWithProviders(<ProjectTable clientId="client-1" />)
+    const { container } = renderWithProviders(<ProjectTable clientId="client-1" clientName="Acme Corp" />)
     await waitFor(() => {
-      expect(screen.getByText('No projects yet.')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /no projects yet/i })).toBeInTheDocument()
     })
     const results = await axe(container)
     expect(results.violations).toHaveLength(0)
