@@ -1,5 +1,12 @@
 import '@testing-library/jest-dom'
 
+// jsdom doesn't implement ResizeObserver — stub it for Radix UI components
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 // Mock localStorage for Zustand persist middleware
 const localStorageMock = (() => {
   let store: Record<string, string> = {}

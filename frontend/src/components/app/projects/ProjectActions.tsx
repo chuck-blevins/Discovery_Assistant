@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { useArchiveProject, useDeleteProject } from '@/hooks/useProjects'
 import type { ProjectResponse } from '@/types/api'
 
@@ -29,38 +30,60 @@ export function ProjectActions({ project, clientId, onEdit }: ProjectActionsProp
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => navigate(`/${clientId}/${project.id}#data-sources`)}
-        aria-label="Upload data"
-      >
-        <Upload className="size-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => navigate(`/${clientId}/${project.id}/analyze`)}
-        aria-label="Analyze"
-      >
-        <BarChart3 className="size-4" />
-      </Button>
-      <Button variant="ghost" size="icon-sm" onClick={onEdit} aria-label="Edit project">
-        <Pencil className="size-4" />
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => navigate(`/${clientId}/${project.id}#data-sources`)}
+            aria-label="Upload data"
+          >
+            <Upload className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Upload data</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => navigate(`/${clientId}/${project.id}/analyze`)}
+            aria-label="Run analysis"
+          >
+            <BarChart3 className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Run analysis</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon-sm" onClick={onEdit} aria-label="Edit project">
+            <Pencil className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Edit project</TooltipContent>
+      </Tooltip>
 
       {project.status === 'active' ? (
         <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={archiveMutation.isPending}
-              aria-label="Archive project"
-            >
-              <Archive className="size-4" />
-            </Button>
-          </AlertDialogTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={archiveMutation.isPending}
+                  aria-label="Archive project"
+                >
+                  <Archive className="size-4" />
+                </Button>
+              </AlertDialogTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Archive project</TooltipContent>
+          </Tooltip>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Archive &ldquo;{project.name}&rdquo;?</AlertDialogTitle>
@@ -80,28 +103,38 @@ export function ProjectActions({ project, clientId, onEdit }: ProjectActionsProp
           </AlertDialogContent>
         </AlertDialog>
       ) : (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => archiveMutation.mutate(project.id)}
-          disabled={archiveMutation.isPending}
-          aria-label="Unarchive project"
-        >
-          <ArchiveRestore className="size-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => archiveMutation.mutate(project.id)}
+              disabled={archiveMutation.isPending}
+              aria-label="Unarchive project"
+            >
+              <ArchiveRestore className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Unarchive project</TooltipContent>
+        </Tooltip>
       )}
 
       <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={deleteMutation.isPending}
-            aria-label="Delete project"
-          >
-            <Trash2 className="size-4" />
-          </Button>
-        </AlertDialogTrigger>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={deleteMutation.isPending}
+                aria-label="Delete project"
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </AlertDialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Delete project</TooltipContent>
+        </Tooltip>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete &ldquo;{project.name}&rdquo;?</AlertDialogTitle>

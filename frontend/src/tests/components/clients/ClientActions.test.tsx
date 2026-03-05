@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { ClientActions } from '@/components/app/clients/ClientActions'
 import type { ClientResponse } from '@/types/api'
 
@@ -43,7 +45,9 @@ function renderWithProviders(ui: React.ReactElement) {
   })
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <TooltipProvider delayDuration={0}>
+        <MemoryRouter>{ui}</MemoryRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }
@@ -113,5 +117,25 @@ describe('ClientActions', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
     expect(clientsApi.deleteClient).not.toHaveBeenCalled()
+  })
+
+  it('shows "Edit client" tooltip on hover', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
+    const editBtn = screen.getByRole('button', { name: /edit client/i })
+    await user.hover(editBtn)
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip', { name: /edit client/i })).toBeInTheDocument()
+    })
+  })
+
+  it('shows "Archive client" tooltip on hover for active client', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
+    const archiveBtn = screen.getByRole('button', { name: /archive client/i })
+    await user.hover(archiveBtn)
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip', { name: /archive client/i })).toBeInTheDocument()
+    })
   })
 })

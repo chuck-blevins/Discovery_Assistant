@@ -18,7 +18,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-        <TooltipProvider>
+        <TooltipProvider delayDuration={300}>
           <BrowserRouter>
           <Routes>
             {/* Public routes */}
