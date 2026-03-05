@@ -7,7 +7,6 @@ const ARTIFACT_TYPE_LABELS: Record<string, string> = {
   interview_script: 'Interview script',
   survey_template: 'Survey template',
   persona_template: 'Persona template',
-  icp_summary: 'ICP summary',
   positioning_statement: 'Positioning statement',
 }
 
@@ -51,6 +50,8 @@ export function ArtifactsSection({ analysisId }: Props) {
     }
   }
 
+  const visibleArtifacts = artifacts.filter((a) => a.artifact_type !== 'icp_summary')
+
   return (
     <section aria-label="Artifacts" className="space-y-4">
       <h2 className="text-lg font-semibold">Artifacts</h2>
@@ -60,17 +61,17 @@ export function ArtifactsSection({ analysisId }: Props) {
         </p>
       )}
       {loading && <p className="text-sm text-muted-foreground">Loading artifacts…</p>}
-      {!loading && artifacts.length === 0 && (
+      {!loading && visibleArtifacts.length === 0 && (
         <div>
           <p className="text-sm text-muted-foreground mb-2">
-            Generate one-click download artifacts (interview script, survey, persona, ICP, positioning).
+            Generate one-click download artifacts (interview script, survey, persona, positioning).
           </p>
           <Button onClick={handleGenerate} disabled={generating}>
             {generating ? 'Generating…' : 'Generate artifacts'}
           </Button>
         </div>
       )}
-      {!loading && artifacts.length > 0 && (
+      {!loading && visibleArtifacts.length > 0 && (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2 items-center">
             <Button onClick={handleGenerate} variant="outline" size="sm" disabled={generating}>
@@ -78,7 +79,7 @@ export function ArtifactsSection({ analysisId }: Props) {
             </Button>
           </div>
           <ul className="list-none space-y-2">
-            {artifacts.map((a) => (
+            {visibleArtifacts.map((a) => (
               <li key={a.id} className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
                 <span className="text-sm">
                   {ARTIFACT_TYPE_LABELS[a.artifact_type] ?? a.artifact_type} — {new Date(a.generated_at).toLocaleString()}

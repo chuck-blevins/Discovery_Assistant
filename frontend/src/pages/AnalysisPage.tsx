@@ -10,9 +10,12 @@ import { RecommendationsSection } from '@/components/app/analysis/Recommendation
 import { ArtifactsSection } from '@/components/app/analysis/ArtifactsSection'
 import { AnalysisSummaryActions } from '@/components/app/analysis/AnalysisSummaryActions'
 import { buildAnalysisSummaryMarkdown } from '@/lib/analysisMarkdown'
+import { IcpCard } from '@/components/app/icp/IcpCard'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useProject } from '@/hooks/useProjects'
 import { useDataSources } from '@/hooks/useDataSources'
 import { useAnalyses, useAnalysis, useRunAnalysisStream } from '@/hooks/useAnalyses'
+import { useIcp } from '@/hooks/useIcp'
 import type { SSEResultEvent } from '@/api/analyses'
 
 type PageState = 'idle' | 'streaming' | 'result' | 'error'
@@ -32,6 +35,7 @@ export default function AnalysisPage() {
 
   const { data: selectedAnalysis } = useAnalysis(selectedAnalysisId ?? undefined)
   const { runStream } = useRunAnalysisStream(projectId)
+  const { data: icp } = useIcp(projectId)
   const resultsSectionRef = useRef<HTMLDivElement>(null)
   const autoStartDoneRef = useRef(false)
 
@@ -175,27 +179,51 @@ export default function AnalysisPage() {
       )}
 
       {pageState === 'result' && displayResult && (
-        <section ref={resultsSectionRef} aria-label="Analysis results" className="space-y-6">
-          <AnalysisSummaryActions
-            markdown={buildAnalysisSummaryMarkdown(displayResult, project?.name ?? '')}
-            projectName={project?.name ?? ''}
-          />
-          <ConfidenceMeter score={displayResult.confidence_score} />
-          {displayResult.cost.tokens > 0 && (
-            <CostDisplay tokens={displayResult.cost.tokens} usd={displayResult.cost.usd} />
-          )}
-          {displayResult.positioning_result && (
-            <PositioningSection positioning={displayResult.positioning_result} />
-          )}
-          <InsightsList insights={displayResult.insights} />
-          {displayResult.recommendations && project && (
-            <RecommendationsSection
-              recommendations={displayResult.recommendations}
-              projectName={project.name}
-            />
-          )}
-          <ArtifactsSection analysisId={displayResult.analysis_id} />
-          <Button onClick={handleStartAnalysis}>Run another analysis</Button>
+        <section ref={resultsSectionRef} aria-label="Analysis results">
+          <Tabs defaultValue="analysis" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="analysis">Analysis Summary</TabsTrigger>
+              <TabsTrigger value="icp">ICP Summary</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="analysis" className="space-y-6">
+              <AnalysisSummaryActions
+                markdown={buildAnalysisSummaryMarkdown(displayResult, project?.name ?? '')}
+                projectName={project?.name ?? ''}
+              />
+              <ConfidenceMeter score={displayResult.confidence_score} />
+              {displayResult.cost.tokens > 0 && (
+                <CostDisplay tokens={displayResult.cost.tokens} usd={displayResult.cost.usd} />
+              )}
+              {displayResult.positioning_result && (
+                <PositioningSection positioning={displayResult.positioning_result} />
+              )}
+              <InsightsList insights={displayResult.insights} />
+              {displayResult.recommendations && project && (
+                <RecommendationsSection
+                  recommendations={displayResult.recommendations}
+                  projectName={project.name}
+                />
+              )}
+              <ArtifactsSection analysisId={displayResult.analysis_id} />
+              <Button onClick={handleStartAnalysis}>Run another analysis</Button>
+            </TabsContent>
+
+            <TabsContent value="icp" forceMount>
+              {icp ? (
+                <div className="space-y-2">
+                  {icp.last_analyzed_at && (
+                    <p className="text-sm text-muted-foreground">
+                      Updated {new Date(icp.last_analyzed_at).toLocaleString()}
+                    </p>
+                  )}
+                  <IcpCard icp={icp} projectName={project?.name ?? ''} />
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No ICP data yet.</p>
+              )}
+            </TabsContent>
+          </Tabs>
         </section>
       )}
 

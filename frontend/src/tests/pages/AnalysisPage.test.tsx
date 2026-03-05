@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { axe } from 'vitest-axe'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -18,10 +18,35 @@ vi.mock('@/hooks/useAnalyses', () => ({
   useAnalysis: vi.fn(),
   useRunAnalysisStream: vi.fn(),
 }))
+vi.mock('@/hooks/useIcp', () => ({
+  useIcp: vi.fn(),
+}))
 
 import { useProject } from '@/hooks/useProjects'
 import { useDataSources } from '@/hooks/useDataSources'
 import { useAnalyses, useAnalysis, useRunAnalysisStream } from '@/hooks/useAnalyses'
+import { useIcp } from '@/hooks/useIcp'
+import type { IcpResponse } from '@/types/api'
+
+const mockIcp: IcpResponse = {
+  id: 'icp-1',
+  project_id: 'proj-1',
+  confidence_score: 0.8,
+  company_size: 'SMB (10–200 employees)',
+  industries: 'SaaS, B2B Tech',
+  geography: 'North America',
+  revenue: '$1M–$10M ARR',
+  tech_stack: null,
+  use_case_fit: null,
+  buying_process: null,
+  budget: null,
+  maturity: null,
+  custom: null,
+  dimension_confidence: null,
+  last_analyzed_at: '2026-03-05T10:00:00Z',
+  created_at: '2026-03-05T10:00:00Z',
+  updated_at: '2026-03-05T10:00:00Z',
+}
 
 const project: ProjectResponse = {
   id: 'proj-1',
@@ -53,6 +78,9 @@ function renderAnalysisPage(route = '/client-1/proj-1/analyze') {
 }
 
 beforeEach(() => {
+  // jsdom doesn't implement scrollIntoView
+  window.HTMLElement.prototype.scrollIntoView = vi.fn()
+
   vi.mocked(useProject).mockReturnValue({
     data: project,
     isLoading: false,
@@ -70,6 +98,11 @@ beforeEach(() => {
   vi.mocked(useRunAnalysisStream).mockReturnValue({
     runStream: vi.fn(),
   } as ReturnType<typeof useRunAnalysisStream>)
+  vi.mocked(useIcp).mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+  } as ReturnType<typeof useIcp>)
 })
 
 describe('AnalysisPage', () => {
@@ -98,5 +131,78 @@ describe('AnalysisPage', () => {
     })
     const results = await axe(container)
     expect(results.violations).toHaveLength(0)
+  })
+
+  it('shows Analysis Summary and ICP Summary tabs when a previous analysis is selected', async () => {
+    const pastAnalysis = {
+      id: 'analysis-past',
+      project_id: 'proj-1',
+      objective: 'problem-validation',
+      confidence_score: 0.7,
+      tokens_used: 1000,
+      cost_usd: 0.01,
+      insights: [],
+      created_at: '2026-03-05T09:00:00Z',
+    }
+    vi.mocked(useAnalyses).mockReturnValue({
+      data: [pastAnalysis],
+    } as unknown as ReturnType<typeof useAnalyses>)
+    vi.mocked(useAnalysis).mockReturnValue({
+      data: { ...pastAnalysis, recommendations: null, positioning_result: null },
+    } as unknown as ReturnType<typeof useAnalysis>)
+    vi.mocked(useIcp).mockReturnValue({
+      data: mockIcp,
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useIcp>)
+
+    renderAnalysisPage()
+
+    // Click on the previous analysis to enter result state
+    const analysisLink = await screen.findByRole('button', { name: /2026/ })
+    fireEvent.click(analysisLink)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /analysis summary/i })).toBeInTheDocument()
+    })
+    expect(screen.getByRole('tab', { name: /icp summary/i })).toBeInTheDocument()
+  })
+
+  it('ICP tab panel contains ICP card content when ICP data exists', async () => {
+    const pastAnalysis = {
+      id: 'analysis-past',
+      project_id: 'proj-1',
+      objective: 'problem-validation',
+      confidence_score: 0.7,
+      tokens_used: 0,
+      cost_usd: 0,
+      insights: [],
+      created_at: '2026-03-05T09:00:00Z',
+    }
+    vi.mocked(useAnalyses).mockReturnValue({
+      data: [pastAnalysis],
+    } as unknown as ReturnType<typeof useAnalyses>)
+    vi.mocked(useAnalysis).mockReturnValue({
+      data: { ...pastAnalysis, recommendations: null, positioning_result: null },
+    } as unknown as ReturnType<typeof useAnalysis>)
+    vi.mocked(useIcp).mockReturnValue({
+      data: mockIcp,
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useIcp>)
+
+    renderAnalysisPage()
+
+    const analysisLink = await screen.findByRole('button', { name: /2026/ })
+    fireEvent.click(analysisLink)
+
+    // ICP tab panel is in the DOM (aria-hidden when inactive)
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /icp summary/i })).toBeInTheDocument()
+    })
+
+    // ICP content is in the tabpanel DOM even when tab is inactive (aria-hidden)
+    expect(screen.queryByText(/ideal customer profile/i, { hidden: true })).toBeInTheDocument()
+    expect(screen.queryByText(/updated/i, { hidden: true })).toBeInTheDocument()
   })
 })
