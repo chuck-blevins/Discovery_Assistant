@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useLocation } from 'react-router-dom'
+import { Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { ConfidenceMeter } from '@/components/app/analysis/ConfidenceMeter'
 import { InsightsList } from '@/components/app/analysis/InsightsList'
 import { CostDisplay } from '@/components/app/analysis/CostDisplay'
@@ -69,6 +75,12 @@ export default function AnalysisPage() {
       handleStartAnalysis()
     }
   }, [hasDataSources, pageState, location.state])
+
+  const handleSelectAnalysis = (id: string) => {
+    setSelectedAnalysisId(id)
+    setResult(null)
+    setPageState('result')
+  }
 
   const handleStartAnalysis = () => {
     if (!projectId || !hasDataSources) return
@@ -233,17 +245,30 @@ export default function AnalysisPage() {
           <ul className="list-none space-y-1">
             {analysesList.map((a) => (
               <li key={a.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedAnalysisId(a.id)
-                    setResult(null)
-                    setPageState('result')
-                  }}
-                  className="text-left text-sm text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-                >
-                  {new Date(a.created_at).toLocaleString()} — {a.confidence_score != null ? `${Math.round(a.confidence_score * 100)}%` : '—'}
-                </button>
+                <div className="flex items-center gap-2 w-full group">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectAnalysis(a.id)}
+                    className="flex-1 text-left text-sm text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded py-1.5"
+                  >
+                    {new Date(a.created_at).toLocaleString()} — {a.confidence_score != null ? `${Math.round(a.confidence_score * 100)}%` : '—'}
+                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="View Analysis"
+                        onClick={() => handleSelectAnalysis(a.id)}
+                        className="shrink-0"
+                      >
+                        <Eye className="size-4" aria-hidden />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">View Analysis</TooltipContent>
+                  </Tooltip>
+                </div>
               </li>
             ))}
           </ul>

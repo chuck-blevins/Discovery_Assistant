@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { axe } from 'vitest-axe'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import AnalysisPage from '@/pages/AnalysisPage'
 import type { ProjectResponse } from '@/types/api'
 
@@ -68,11 +70,13 @@ function renderAnalysisPage(route = '/client-1/proj-1/analyze') {
   })
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[route]}>
-        <Routes>
-          <Route path="/:clientId/:projectId/analyze" element={<AnalysisPage />} />
-        </Routes>
-      </MemoryRouter>
+      <TooltipProvider delayDuration={0}>
+        <MemoryRouter initialEntries={[route]}>
+          <Routes>
+            <Route path="/:clientId/:projectId/analyze" element={<AnalysisPage />} />
+          </Routes>
+        </MemoryRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }
@@ -166,6 +170,121 @@ describe('AnalysisPage', () => {
       expect(screen.getByRole('tab', { name: /analysis summary/i })).toBeInTheDocument()
     })
     expect(screen.getByRole('tab', { name: /icp summary/i })).toBeInTheDocument()
+  })
+
+  it('displays view icon on each previous analysis row with tooltip', async () => {
+    const pastAnalysis = {
+      id: 'analysis-past',
+      project_id: 'proj-1',
+      objective: 'problem-validation',
+      confidence_score: 0.7,
+      tokens_used: 0,
+      cost_usd: 0,
+      insights: [],
+      created_at: '2026-03-05T09:00:00Z',
+    }
+    vi.mocked(useAnalyses).mockReturnValue({
+      data: [pastAnalysis],
+    } as unknown as ReturnType<typeof useAnalyses>)
+    vi.mocked(useAnalysis).mockReturnValue({
+      data: null,
+    } as unknown as ReturnType<typeof useAnalysis>)
+
+    renderAnalysisPage()
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /view analysis/i })).toBeInTheDocument()
+    })
+  })
+
+  it('shows tooltip "View Analysis" when hovering view icon', async () => {
+    const user = userEvent.setup()
+    const pastAnalysis = {
+      id: 'analysis-past',
+      project_id: 'proj-1',
+      objective: 'problem-validation',
+      confidence_score: 0.7,
+      tokens_used: 0,
+      cost_usd: 0,
+      insights: [],
+      created_at: '2026-03-05T09:00:00Z',
+    }
+    vi.mocked(useAnalyses).mockReturnValue({
+      data: [pastAnalysis],
+    } as unknown as ReturnType<typeof useAnalyses>)
+    vi.mocked(useAnalysis).mockReturnValue({
+      data: null,
+    } as unknown as ReturnType<typeof useAnalysis>)
+
+    renderAnalysisPage()
+
+    const viewButton = await screen.findByRole('button', { name: /view analysis/i })
+    await user.hover(viewButton)
+
+    await waitFor(() => {
+      const tooltip = screen.getByRole('tooltip', { name: 'View Analysis' })
+      expect(tooltip).toBeInTheDocument()
+    })
+  })
+
+  it('has zero axe violations when previous analyses list is visible', async () => {
+    const pastAnalysis = {
+      id: 'analysis-past',
+      project_id: 'proj-1',
+      objective: 'problem-validation',
+      confidence_score: 0.7,
+      tokens_used: 0,
+      cost_usd: 0,
+      insights: [],
+      created_at: '2026-03-05T09:00:00Z',
+    }
+    vi.mocked(useAnalyses).mockReturnValue({
+      data: [pastAnalysis],
+    } as unknown as ReturnType<typeof useAnalyses>)
+    vi.mocked(useAnalysis).mockReturnValue({
+      data: null,
+    } as unknown as ReturnType<typeof useAnalysis>)
+
+    const { container } = renderAnalysisPage()
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /view analysis/i })).toBeInTheDocument()
+    })
+    const results = await axe(container)
+    expect(results.violations).toHaveLength(0)
+  })
+
+  it('clicking view icon on previous analysis row shows analysis result', async () => {
+    const pastAnalysis = {
+      id: 'analysis-past',
+      project_id: 'proj-1',
+      objective: 'problem-validation',
+      confidence_score: 0.7,
+      tokens_used: 0,
+      cost_usd: 0,
+      insights: [],
+      created_at: '2026-03-05T09:00:00Z',
+    }
+    vi.mocked(useAnalyses).mockReturnValue({
+      data: [pastAnalysis],
+    } as unknown as ReturnType<typeof useAnalyses>)
+    vi.mocked(useAnalysis).mockReturnValue({
+      data: { ...pastAnalysis, recommendations: null, positioning_result: null },
+    } as unknown as ReturnType<typeof useAnalysis>)
+    vi.mocked(useIcp).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useIcp>)
+
+    renderAnalysisPage()
+
+    const viewButton = await screen.findByRole('button', { name: /view analysis/i })
+    fireEvent.click(viewButton)
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /analysis summary/i })).toBeInTheDocument()
+    })
   })
 
   it('ICP tab panel contains ICP card content when ICP data exists', async () => {
