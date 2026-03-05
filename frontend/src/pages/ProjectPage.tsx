@@ -108,14 +108,10 @@ export default function ProjectPage() {
               </div>
             )}
             {project.last_analyzed_at && (
-              <p className="text-sm">
-                <Link
-                  to={`/${clientId}/${projectId}/analyze`}
-                  className="text-primary underline hover:no-underline focus:outline focus:ring-2 focus:ring-primary rounded"
-                >
-                  View full analysis
-                </Link>
-                {' · '}
+              <p className="text-sm flex flex-wrap items-center gap-2">
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/${clientId}/${projectId}/analyze`} state={{ viewLatest: true }}>View Last Analysis</Link>
+                </Button>
                 <span className="text-muted-foreground">
                   Last analyzed: {new Date(project.last_analyzed_at).toLocaleDateString()}
                 </span>
@@ -168,12 +164,9 @@ export default function ProjectPage() {
             </Button>
           )}
           {project.last_analyzed_at && (
-            <Link
-              to={`/${clientId}/${projectId}/analyze`}
-              className="text-sm text-primary underline hover:no-underline focus:outline focus:ring-2 focus:ring-primary rounded"
-            >
-              View full analysis
-            </Link>
+            <Button asChild size="sm" variant="outline">
+              <Link to={`/${clientId}/${projectId}/analyze`} state={{ viewLatest: true }}>View Last Analysis</Link>
+            </Button>
           )}
         </div>
         {!hasDataSources && (

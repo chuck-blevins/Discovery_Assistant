@@ -64,14 +64,15 @@ const project: ProjectResponse = {
   archived_at: null,
 }
 
-function renderAnalysisPage(route = '/client-1/proj-1/analyze') {
+function renderAnalysisPage(route: string | { pathname: string; state?: Record<string, unknown> } = '/client-1/proj-1/analyze') {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
+  const initialEntries = typeof route === 'string' ? [route] : [route]
   return render(
     <QueryClientProvider client={qc}>
       <TooltipProvider delayDuration={0}>
-        <MemoryRouter initialEntries={[route]}>
+        <MemoryRouter initialEntries={initialEntries}>
           <Routes>
             <Route path="/:clientId/:projectId/analyze" element={<AnalysisPage />} />
           </Routes>
@@ -252,6 +253,36 @@ describe('AnalysisPage', () => {
     })
     const results = await axe(container)
     expect(results.violations).toHaveLength(0)
+  })
+
+  it('when navigated with viewLatest state, opens latest analysis result', async () => {
+    const pastAnalysis = {
+      id: 'analysis-latest',
+      project_id: 'proj-1',
+      objective: 'problem-validation',
+      confidence_score: 0.75,
+      tokens_used: 0,
+      cost_usd: 0,
+      insights: [],
+      created_at: '2026-03-05T10:00:00Z',
+    }
+    vi.mocked(useAnalyses).mockReturnValue({
+      data: [pastAnalysis],
+    } as unknown as ReturnType<typeof useAnalyses>)
+    vi.mocked(useAnalysis).mockReturnValue({
+      data: { ...pastAnalysis, recommendations: null, positioning_result: null },
+    } as unknown as ReturnType<typeof useAnalysis>)
+    vi.mocked(useIcp).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useIcp>)
+
+    renderAnalysisPage({ pathname: '/client-1/proj-1/analyze', state: { viewLatest: true } })
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /analysis summary/i })).toBeInTheDocument()
+    })
   })
 
   it('clicking view icon on previous analysis row shows analysis result', async () => {

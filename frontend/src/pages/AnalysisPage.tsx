@@ -44,6 +44,7 @@ export default function AnalysisPage() {
   const { data: icp } = useIcp(projectId)
   const resultsSectionRef = useRef<HTMLDivElement>(null)
   const autoStartDoneRef = useRef(false)
+  const viewLatestHandledRef = useRef(false)
 
   const hasDataSources = (dataSources?.length ?? 0) > 0
   const displayResult = result ?? (selectedAnalysisId && selectedAnalysis
@@ -75,6 +76,20 @@ export default function AnalysisPage() {
       handleStartAnalysis()
     }
   }, [hasDataSources, pageState, location.state])
+
+  // When navigated from Project "View Last Analysis" (state.viewLatest), open the most recent analysis
+  useEffect(() => {
+    const viewLatest = (location.state as { viewLatest?: boolean } | null)?.viewLatest
+    if (!viewLatest || !analysesList?.length || viewLatestHandledRef.current) return
+    viewLatestHandledRef.current = true
+    const sorted = [...analysesList].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+    const latestId = sorted[0].id
+    setSelectedAnalysisId(latestId)
+    setResult(null)
+    setPageState('result')
+  }, [analysesList, location.state])
 
   const handleSelectAnalysis = (id: string) => {
     setSelectedAnalysisId(id)
