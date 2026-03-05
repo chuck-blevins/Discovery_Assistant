@@ -15,6 +15,12 @@ vi.mock('@/api/clients', () => ({
   deleteClient: vi.fn(),
 }))
 
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async (importActual) => {
+  const actual = await importActual<typeof import('react-router-dom')>()
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 import * as clientsApi from '@/api/clients'
 
 const existingClient: ClientResponse = {
@@ -68,7 +74,7 @@ describe('ClientForm — create mode', () => {
     expect(screen.getByText('Name is required')).toBeInTheDocument()
   })
 
-  it('calls onOpenChange(false) on successful create', async () => {
+  it('calls onOpenChange(false) and navigates with creation state on successful create', async () => {
     const mockCreated: ClientResponse = { ...existingClient, id: 'new-id', name: 'Beta Inc' }
     vi.mocked(clientsApi.createClient).mockResolvedValue(mockCreated)
     vi.mocked(clientsApi.listClients).mockResolvedValue([])
@@ -83,6 +89,9 @@ describe('ClientForm — create mode', () => {
 
     await waitFor(() => {
       expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+    expect(mockNavigate).toHaveBeenCalledWith('/new-id', {
+      state: { clientJustCreated: true, clientName: 'Beta Inc' },
     })
   })
 
