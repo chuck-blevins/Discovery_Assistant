@@ -8,6 +8,8 @@ import { CostDisplay } from '@/components/app/analysis/CostDisplay'
 import { PositioningSection } from '@/components/app/analysis/PositioningSection'
 import { RecommendationsSection } from '@/components/app/analysis/RecommendationsSection'
 import { ArtifactsSection } from '@/components/app/analysis/ArtifactsSection'
+import { AnalysisSummaryActions } from '@/components/app/analysis/AnalysisSummaryActions'
+import { buildAnalysisSummaryMarkdown } from '@/lib/analysisMarkdown'
 import { useProject } from '@/hooks/useProjects'
 import { useDataSources } from '@/hooks/useDataSources'
 import { useAnalyses, useAnalysis, useRunAnalysisStream } from '@/hooks/useAnalyses'
@@ -174,6 +176,10 @@ export default function AnalysisPage() {
 
       {pageState === 'result' && displayResult && (
         <section ref={resultsSectionRef} aria-label="Analysis results" className="space-y-6">
+          <AnalysisSummaryActions
+            markdown={buildAnalysisSummaryMarkdown(displayResult, project?.name ?? '')}
+            projectName={project?.name ?? ''}
+          />
           <ConfidenceMeter score={displayResult.confidence_score} />
           {displayResult.cost.tokens > 0 && (
             <CostDisplay tokens={displayResult.cost.tokens} usd={displayResult.cost.usd} />
