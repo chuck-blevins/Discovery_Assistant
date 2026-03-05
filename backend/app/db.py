@@ -57,16 +57,16 @@ from sqlalchemy.orm import declarative_base  # Declarative base class
 # For production, set via environment variable:
 # $ export DATABASE_URL=\"postgresql://user:pass@prod-server.com/proddb\"
 #
-# LOCAL DEVELOPMENT DEFAULT:
-# - Host: localhost (your local machine)
+# LOCAL DEVELOPMENT DEFAULT (must match docker-compose.yml Postgres env):
+# - Host: localhost (your local machine; use 'db' when backend runs in Docker)
 # - Port: 5432 (PostgreSQL default port)
-# - User: postgres (PostgreSQL admin user)
-# - Password: password123 (dev password - NEVER use in production!)
-# - Database: discovery_app (our database name)
+# - User: postgres
+# - Password: postgres (same as POSTGRES_PASSWORD in docker-compose - NEVER use in production!)
+# - Database: discovery_app
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:password123@localhost:5432/discovery_app"
+    "postgresql://postgres:postgres@localhost:5432/discovery_app"
 )
 
 # ============================================================================
@@ -81,8 +81,8 @@ DATABASE_URL = os.getenv(
 # This line converts \"postgresql://\" to \"postgresql+asyncpg://\"
 #
 # Example transformation:
-# IN:  postgresql://postgres:password123@localhost:5432/discovery_app
-# OUT: postgresql+asyncpg://postgres:password123@localhost:5432/discovery_app
+# IN:  postgresql://postgres:postgres@localhost:5432/discovery_app
+# OUT: postgresql+asyncpg://postgres:postgres@localhost:5432/discovery_app
 #
 # The asyncpg driver is much faster than psycopg2 for async applications
 
