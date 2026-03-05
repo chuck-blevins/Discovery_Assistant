@@ -4,7 +4,9 @@ set -e
 cd /app
 
 echo "Waiting for database..."
-until alembic upgrade head 2>/dev/null; do
+# Give Postgres a moment after healthcheck passes (accepting connections can lag slightly)
+sleep 3
+until alembic upgrade head; do
   echo "Database not ready, retrying in 2s..."
   sleep 2
 done

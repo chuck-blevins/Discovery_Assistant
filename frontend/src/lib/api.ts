@@ -1,3 +1,5 @@
+import { getAuthHeaders } from '@/api/client'
+
 export const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 /** Thrown by api when response is not ok; carries status for 404 etc. */
@@ -17,6 +19,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeaders(),
       ...options?.headers,
     },
   })

@@ -15,10 +15,7 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      await login(email, password)
-      if (rememberMe) {
-        localStorage.setItem('rememberMe', 'true')
-      }
+      await login(email, password, rememberMe)
       navigate('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')

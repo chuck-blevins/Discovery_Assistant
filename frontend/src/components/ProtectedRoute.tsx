@@ -14,16 +14,24 @@ export default function ProtectedRoute({ children }: Props) {
   const location = useLocation()
 
   useEffect(() => {
+    let cancelled = false
     validateSession()
-    .then(() => getLLMSettings())
-    .then((settings) => {
-      if (!settings.api_key_is_set) {
-        setAuthState('needs-setup')
-      } else {
-        setAuthState('authenticated')
-      }
-    })
-      .catch(() => setAuthState('unauthenticated'))
+      .then(() => getLLMSettings())
+      .then((settings) => {
+        if (cancelled) return
+        if (!settings?.api_key_is_set) {
+          setAuthState('needs-setup')
+        } else {
+          setAuthState('authenticated')
+        }
+      })
+      .catch(() => {
+        if (cancelled) return
+        setAuthState('unauthenticated')
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   if (authState === 'loading') {
