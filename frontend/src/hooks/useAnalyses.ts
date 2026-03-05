@@ -34,6 +34,12 @@ export function useRunAnalysisStream(projectId: string | undefined) {
       if (!projectId) return
       return runAnalysisStream(projectId, {
         ...callbacks,
+        onResult: (data) => {
+          if (data.icp_updated) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.icp.byProject(projectId) })
+          }
+          callbacks.onResult?.(data)
+        },
         onDone: () => {
           queryClient.invalidateQueries({ queryKey: queryKeys.analyses.byProject(projectId) })
           queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) })

@@ -27,12 +27,12 @@ export function ClientList() {
     <div className="space-y-4">
       {/* Header row */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-zinc-900">Your Clients</h1>
+        <h1 className="text-2xl font-bold">Your Clients</h1>
         <Button onClick={openCreate}>New Client</Button>
       </div>
 
       {/* Show archived toggle */}
-      <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer w-fit">
+      <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer w-fit">
         <input
           type="checkbox"
           checked={includeArchived}
@@ -72,14 +72,14 @@ export function ClientList() {
 
       {/* Error */}
       {isError && (
-        <p role="alert" className="text-sm text-zinc-500">
+        <p role="alert" className="text-sm text-muted-foreground">
           Failed to load clients. Please try again.
         </p>
       )}
 
       {/* Empty state */}
       {!isLoading && !isError && clients && clients.length === 0 && (
-        <div className="flex flex-col items-center gap-4 py-12 text-zinc-500">
+        <div className="flex flex-col items-center gap-4 py-12 text-muted-foreground">
           <p>No clients yet.</p>
           <Button onClick={openCreate}>New Client</Button>
         </div>

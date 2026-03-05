@@ -229,6 +229,7 @@ async def stream_analysis(
                         idata = result["icp_data"]
                         score_for_project = idata.get("confidence_score") if idata.get("confidence_score") is not None else 0.0
                         await icp_service.upsert_icp(gen_db, project_id_val, **idata)
+                        logger.info("ICP upserted for project %s (stream), commit pending", project_id_val)
                         analysis = await analysis_service.create_analysis(
                             db=gen_db,
                             project_id=project_id_val,
@@ -324,6 +325,8 @@ async def stream_analysis(
                         commit=False,
                     )
                     await gen_db.commit()
+                    if objective == "icp-refinement":
+                        logger.info("Stream committed for project %s (ICP persisted)", project_id_val)
 
                     yield _sse(result_payload)
                     yield _sse({"type": "done"})

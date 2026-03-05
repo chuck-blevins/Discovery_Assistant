@@ -129,6 +129,20 @@ describe('AnalysisPage', () => {
     })
   })
 
+  it('triggers analysis exactly once when navigated with state.autoStart', async () => {
+    const runStreamMock = vi.fn()
+    vi.mocked(useRunAnalysisStream).mockReturnValue({
+      runStream: runStreamMock,
+    } as ReturnType<typeof useRunAnalysisStream>)
+
+    renderAnalysisPage({ pathname: '/client-1/proj-1/analyze', state: { autoStart: true } })
+
+    await waitFor(() => {
+      expect(runStreamMock).toHaveBeenCalled()
+    })
+    expect(runStreamMock).toHaveBeenCalledTimes(1)
+  })
+
   it('has zero axe violations in idle state', async () => {
     const { container } = renderAnalysisPage()
     await waitFor(() => {

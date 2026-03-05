@@ -17,14 +17,19 @@ import { ArtifactsSection } from '@/components/app/analysis/ArtifactsSection'
 import { AnalysisSummaryActions } from '@/components/app/analysis/AnalysisSummaryActions'
 import { buildAnalysisSummaryMarkdown } from '@/lib/analysisMarkdown'
 import { IcpCard } from '@/components/app/icp/IcpCard'
+import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useProject } from '@/hooks/useProjects'
 import { useDataSources } from '@/hooks/useDataSources'
 import { useAnalyses, useAnalysis, useRunAnalysisStream } from '@/hooks/useAnalyses'
 import { useIcp } from '@/hooks/useIcp'
 import type { SSEResultEvent } from '@/api/analyses'
+import { OBJECTIVE_LABELS } from '@/lib/constants'
 
 type PageState = 'idle' | 'streaming' | 'result' | 'error'
+
+// Guard so autoStart only runs once per project per navigation (avoids double run under React Strict Mode).
+const autoStartedProjectIds = new Set<string>()
 
 export default function AnalysisPage() {
   const { clientId, projectId } = useParams<{ clientId: string; projectId: string }>()
@@ -41,7 +46,7 @@ export default function AnalysisPage() {
 
   const { data: selectedAnalysis } = useAnalysis(selectedAnalysisId ?? undefined)
   const { runStream } = useRunAnalysisStream(projectId)
-  const { data: icp } = useIcp(projectId)
+  const { data: icp, isFetching: icpFetching, refetch: refetchIcp } = useIcp(projectId)
   const resultsSectionRef = useRef<HTMLDivElement>(null)
   const autoStartDoneRef = useRef(false)
   const viewLatestHandledRef = useRef(false)
@@ -68,14 +73,19 @@ export default function AnalysisPage() {
     }
   }, [pageState, displayResult])
 
-  // Auto-start analysis when navigated from data-sources with state.autoStart
+  // Auto-start analysis when navigated from data-sources with state.autoStart.
+  // Module-level set prevents double run when React Strict Mode double-mounts.
   useEffect(() => {
     const autoStart = (location.state as { autoStart?: boolean } | null)?.autoStart
-    if (autoStart && hasDataSources && pageState === 'idle' && !autoStartDoneRef.current) {
-      autoStartDoneRef.current = true
-      handleStartAnalysis()
+    if (!projectId || !autoStart || !hasDataSources || pageState !== 'idle') return
+    if (autoStartedProjectIds.has(projectId)) return
+    autoStartedProjectIds.add(projectId)
+    autoStartDoneRef.current = true
+    handleStartAnalysis()
+    return () => {
+      autoStartedProjectIds.delete(projectId)
     }
-  }, [hasDataSources, pageState, location.state])
+  }, [projectId, hasDataSources, pageState, location.state])
 
   // When navigated from Project "View Last Analysis" (state.viewLatest), open the most recent analysis
   useEffect(() => {
@@ -208,10 +218,17 @@ export default function AnalysisPage() {
       {pageState === 'result' && displayResult && (
         <section ref={resultsSectionRef} aria-label="Analysis results">
           <Tabs defaultValue="analysis" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="analysis">Analysis Summary</TabsTrigger>
-              <TabsTrigger value="icp">ICP Summary</TabsTrigger>
-            </TabsList>
+            <div className="flex items-center gap-2 flex-wrap">
+              <TabsList>
+                <TabsTrigger value="analysis">Analysis Summary</TabsTrigger>
+                <TabsTrigger value="icp">ICP Summary</TabsTrigger>
+              </TabsList>
+              {project?.objective && (
+                <Badge variant="outline" aria-label="Current project objective">
+                  {OBJECTIVE_LABELS[project.objective] ?? project.objective}
+                </Badge>
+              )}
+            </div>
 
             <TabsContent value="analysis" className="space-y-6">
               <AnalysisSummaryActions
@@ -236,8 +253,10 @@ export default function AnalysisPage() {
               <Button onClick={handleStartAnalysis}>Run another analysis</Button>
             </TabsContent>
 
-            <TabsContent value="icp" forceMount>
-              {icp ? (
+            <TabsContent value="icp">
+              {(result?.icp_updated && !icp && icpFetching) ? (
+                <p className="text-sm text-muted-foreground">Loading ICP…</p>
+              ) : icp ? (
                 <div className="space-y-2">
                   {icp.last_analyzed_at && (
                     <p className="text-sm text-muted-foreground">
@@ -245,6 +264,13 @@ export default function AnalysisPage() {
                     </p>
                   )}
                   <IcpCard icp={icp} projectName={project?.name ?? ''} />
+                </div>
+              ) : result?.icp_updated && !icpFetching ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">No ICP data yet.</p>
+                  <Button variant="outline" size="sm" onClick={() => refetchIcp()} aria-label="Retry loading ICP">
+                    Retry loading ICP
+                  </Button>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No ICP data yet.</p>
