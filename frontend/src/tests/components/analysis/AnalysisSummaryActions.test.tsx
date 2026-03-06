@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { screen, fireEvent, act } from '@testing-library/react'
+import { screen, fireEvent, act, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { AnalysisSummaryActions } from '@/components/app/analysis/AnalysisSummaryActions'
 import { renderWithProviders } from '@/tests/utils'
 
@@ -87,5 +88,17 @@ describe('AnalysisSummaryActions', () => {
     expect(mockDocument.write).toHaveBeenCalled()
     expect(mockDocument.close).toHaveBeenCalled()
     expect(mockPrint).toHaveBeenCalled()
+  })
+
+  it('shows "Copy Summary" tooltip when hovering Copy button', async () => {
+    vi.useRealTimers()
+    const user = userEvent.setup()
+    renderWithProviders(<AnalysisSummaryActions markdown={MARKDOWN} projectName="Test Project" />)
+    const copyBtn = screen.getByRole('button', { name: /copy/i })
+    await user.hover(copyBtn)
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip', { name: 'Copy Summary' })).toBeInTheDocument()
+    })
+    vi.useFakeTimers()
   })
 })

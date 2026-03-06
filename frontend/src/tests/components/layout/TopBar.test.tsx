@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { axe } from 'vitest-axe'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { TopBar } from '@/components/app/layout/TopBar'
 
 vi.mock('@/hooks/useClients', () => ({
@@ -20,17 +22,19 @@ function renderTopBarAtRoute(path: string) {
     defaultOptions: { queries: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/" element={<TopBar />} />
-          <Route path="/:clientId" element={<TopBar />} />
-          <Route path="/:clientId/:projectId" element={<TopBar />} />
-          <Route path="/:clientId/:projectId/analyze" element={<TopBar />} />
-          <Route path="*" element={<TopBar />} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>
+    <TooltipProvider delayDuration={0}>
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/" element={<TopBar />} />
+            <Route path="/:clientId" element={<TopBar />} />
+            <Route path="/:clientId/:projectId" element={<TopBar />} />
+            <Route path="/:clientId/:projectId/analyze" element={<TopBar />} />
+            <Route path="*" element={<TopBar />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </TooltipProvider>
   )
 }
 
@@ -99,5 +103,64 @@ describe('TopBar', () => {
     const { container } = renderTopBarAtRoute('/uuid-1')
     const results = await axe(container)
     expect(results.violations).toHaveLength(0)
+  })
+
+  it('has zero axe violations on project route', async () => {
+    vi.mocked(useClient).mockReturnValue({
+      data: { id: 'cid', name: 'Acme Corp' },
+    } as ReturnType<typeof useClient>)
+    vi.mocked(useProject).mockReturnValue({
+      data: { id: 'pid', name: 'Sprint 1' },
+    } as ReturnType<typeof useProject>)
+    const { container } = renderTopBarAtRoute('/cid/pid')
+    const results = await axe(container)
+    expect(results.violations).toHaveLength(0)
+  })
+
+  it('"All Projects" breadcrumb link points to /', () => {
+    vi.mocked(useClient).mockReturnValue({
+      data: { id: 'c1', name: 'Client' },
+    } as ReturnType<typeof useClient>)
+    renderTopBarAtRoute('/c1')
+    const link = screen.getByRole('link', { name: 'All Projects' })
+    expect(link).toHaveAttribute('href', '/')
+  })
+
+  it('client name breadcrumb link on project page points to client route', () => {
+    vi.mocked(useClient).mockReturnValue({
+      data: { id: 'c1', name: 'Acme Corp' },
+    } as ReturnType<typeof useClient>)
+    vi.mocked(useProject).mockReturnValue({
+      data: { id: 'p1', name: 'Proj' },
+    } as ReturnType<typeof useProject>)
+    renderTopBarAtRoute('/c1/p1')
+    const link = screen.getByRole('link', { name: 'Acme Corp' })
+    expect(link).toHaveAttribute('href', '/c1')
+  })
+
+  it('does not display raw UUID in breadcrumb when names are missing', () => {
+    renderTopBarAtRoute('/a1b2c3d4-e5f6-7890-abcd-ef1234567890')
+    expect(screen.getByText('Unknown Client')).toBeInTheDocument()
+    expect(screen.queryByText(/a1b2c3d4-e5f6-7890-abcd-ef1234567890/)).not.toBeInTheDocument()
+  })
+
+  it('does not display raw UUIDs in breadcrumb on project route when names are missing', () => {
+    const clientUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+    const projectUuid = 'b2c3d4e5-f6a7-8901-bcde-f12345678901'
+    renderTopBarAtRoute(`/${clientUuid}/${projectUuid}`)
+    expect(screen.getByText('Unknown Client')).toBeInTheDocument()
+    expect(screen.getByText('Unknown Project')).toBeInTheDocument()
+    expect(screen.queryByText(new RegExp(clientUuid))).not.toBeInTheDocument()
+    expect(screen.queryByText(new RegExp(projectUuid))).not.toBeInTheDocument()
+  })
+
+  it('shows "Open menu" tooltip when hovering hamburger button', async () => {
+    const user = userEvent.setup()
+    renderTopBarAtRoute('/')
+    const menuButton = screen.getByRole('button', { name: 'Open navigation' })
+    await user.hover(menuButton)
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip', { name: 'Open menu' })).toBeInTheDocument()
+    })
   })
 })

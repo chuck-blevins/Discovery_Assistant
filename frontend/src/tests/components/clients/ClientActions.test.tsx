@@ -60,25 +60,25 @@ describe('ClientActions', () => {
   it('calls onEdit when Edit button is clicked', () => {
     const onEdit = vi.fn()
     renderWithProviders(<ClientActions client={activeClient} onEdit={onEdit} />)
-    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /edit client/i }))
     expect(onEdit).toHaveBeenCalledOnce()
   })
 
   it('shows "Archive" button for active clients', () => {
     renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
-    expect(screen.getByRole('button', { name: /^archive$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /archive client/i })).toBeInTheDocument()
   })
 
   it('shows "Unarchive" button for archived clients', () => {
     renderWithProviders(<ClientActions client={archivedClient} onEdit={vi.fn()} />)
-    expect(screen.getByRole('button', { name: /^unarchive$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /unarchive client/i })).toBeInTheDocument()
   })
 
   it('calls archiveClient with client id when Archive is clicked', async () => {
     vi.mocked(clientsApi.archiveClient).mockResolvedValue({ ...activeClient, status: 'archived', archived_at: '2026-02-01T00:00:00Z' })
     vi.mocked(clientsApi.listClients).mockResolvedValue([])
     renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^archive$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /archive client/i }))
     await waitFor(() => {
       expect(clientsApi.archiveClient).toHaveBeenCalledWith(activeClient.id)
     })
@@ -86,7 +86,7 @@ describe('ClientActions', () => {
 
   it('opens delete confirmation dialog when Delete is clicked', async () => {
     renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /delete client/i }))
     await waitFor(() => {
       expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     })
@@ -98,11 +98,10 @@ describe('ClientActions', () => {
     vi.mocked(clientsApi.deleteClient).mockResolvedValue(undefined)
     vi.mocked(clientsApi.listClients).mockResolvedValue([])
     renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /delete client/i }))
     await waitFor(() => {
       expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     })
-    // Trigger has aria-hidden when dialog is open; only the confirm button is accessible
     fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
     await waitFor(() => {
       expect(clientsApi.deleteClient).toHaveBeenCalledWith(activeClient.id)
@@ -111,7 +110,7 @@ describe('ClientActions', () => {
 
   it('does not call deleteClient when Cancel is clicked in confirmation', async () => {
     renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /delete client/i }))
     await waitFor(() => {
       expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     })

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Copy, Download, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface AnalysisSummaryActionsProps {
   markdown: string
@@ -105,18 +106,33 @@ export function AnalysisSummaryActions({ markdown, projectName }: AnalysisSummar
 
   return (
     <div className="flex flex-wrap gap-2" aria-label="Export analysis summary">
-      <Button variant="outline" size="sm" onClick={handleCopy}>
-        <Copy className="size-4 mr-1.5" aria-hidden="true" />
-        {copied ? 'Copied!' : 'Copy'}
-      </Button>
-      <Button variant="outline" size="sm" onClick={handleDownloadMd}>
-        <Download className="size-4 mr-1.5" aria-hidden="true" />
-        Download MD
-      </Button>
-      <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
-        <FileText className="size-4 mr-1.5" aria-hidden="true" />
-        Download PDF
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="sm" onClick={handleCopy}>
+            <Copy className="size-4 mr-1.5" aria-hidden="true" />
+            {copied ? 'Copied!' : 'Copy'}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Copy Summary</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="sm" onClick={handleDownloadMd}>
+            <Download className="size-4 mr-1.5" aria-hidden="true" />
+            Download MD
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Download MD</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+            <FileText className="size-4 mr-1.5" aria-hidden="true" />
+            Download PDF
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Download PDF</TooltipContent>
+      </Tooltip>
     </div>
   )
 }

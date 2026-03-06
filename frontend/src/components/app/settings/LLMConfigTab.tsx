@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 const MODELS = [
   { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6 (Recommended)' },
@@ -129,13 +130,19 @@ export function LLMConfigTab({ isSetup = false }: { isSetup?: boolean }) {
                 placeholder={settings?.api_key_is_set ? 'Enter new key to replace' : 'sk-ant-api03-…'}
                 className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 pr-10 text-sm font-mono shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <button
-                type="button"
-                onClick={() => setShowKey((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-              >
-                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setShowKey((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                    aria-label={showKey ? 'Hide password' : 'Show password'}
+                  >
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{showKey ? 'Hide password' : 'Show password'}</TooltipContent>
+              </Tooltip>
             </div>
             {settings?.api_key_is_set && (
               <button

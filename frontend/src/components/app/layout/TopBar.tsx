@@ -1,6 +1,7 @@
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSidebarStore } from '@/stores/useSidebarStore'
 import { api } from '@/lib/api'
 import { useClient } from '@/hooks/useClients'
@@ -29,16 +30,21 @@ export function TopBar() {
   return (
     <header className="flex items-center h-14 px-4 border-b border-zinc-200 bg-white shrink-0">
       {/* Hamburger — mobile only */}
-      <button
-        onClick={handleHamburger}
-        className={cn(
-          'md:hidden mr-3 p-2 rounded',
-          'hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
-        )}
-        aria-label="Open navigation"
-      >
-        <Menu className="w-5 h-5" aria-hidden="true" />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={handleHamburger}
+            className={cn(
+              'md:hidden mr-3 p-2 rounded',
+              'hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
+            )}
+            aria-label="Open navigation"
+          >
+            <Menu className="w-5 h-5" aria-hidden="true" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Open menu</TooltipContent>
+      </Tooltip>
 
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex-1">

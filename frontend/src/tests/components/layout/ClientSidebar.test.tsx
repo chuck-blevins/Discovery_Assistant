@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { axe } from 'vitest-axe'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ClientSidebar } from '@/components/app/layout/ClientSidebar'
@@ -7,9 +9,11 @@ import { useSidebarStore } from '@/stores/useSidebarStore'
 
 function renderSidebar() {
   return render(
-    <TooltipProvider>
-      <ClientSidebar />
-    </TooltipProvider>
+    <MemoryRouter>
+      <TooltipProvider delayDuration={0}>
+        <ClientSidebar />
+      </TooltipProvider>
+    </MemoryRouter>
   )
 }
 
@@ -45,6 +49,28 @@ describe('ClientSidebar', () => {
     useSidebarStore.setState({ collapsed: true })
     const { getByLabelText } = renderSidebar()
     expect(getByLabelText('Expand sidebar')).toBeInTheDocument()
+  })
+
+  it('shows "Collapse sidebar" tooltip when hovering collapse button (expanded)', async () => {
+    useSidebarStore.setState({ collapsed: false })
+    const user = userEvent.setup()
+    renderSidebar()
+    const collapseButton = screen.getByRole('button', { name: 'Collapse sidebar' })
+    await user.hover(collapseButton)
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip', { name: 'Collapse sidebar' })).toBeInTheDocument()
+    })
+  })
+
+  it('shows "Expand sidebar" tooltip when hovering expand button (collapsed)', async () => {
+    useSidebarStore.setState({ collapsed: true })
+    const user = userEvent.setup()
+    renderSidebar()
+    const expandButton = screen.getByRole('button', { name: 'Expand sidebar' })
+    await user.hover(expandButton)
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip', { name: 'Expand sidebar' })).toBeInTheDocument()
+    })
   })
 
   it('has zero axe violations when expanded', async () => {
