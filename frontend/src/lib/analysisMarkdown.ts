@@ -3,8 +3,8 @@ import type { InsightResponse, PositioningResultResponse, RecommendationsRespons
 interface AnalysisResultForMarkdown {
   confidence_score: number
   insights: InsightResponse[]
-  positioning_result?: PositioningResultResponse
-  recommendations?: RecommendationsResponse
+  positioning_result?: PositioningResultResponse | null
+  recommendations?: RecommendationsResponse | null
 }
 
 export function buildAnalysisSummaryMarkdown(

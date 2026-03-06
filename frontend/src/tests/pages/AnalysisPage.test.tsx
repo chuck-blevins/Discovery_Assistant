@@ -356,17 +356,23 @@ describe('AnalysisPage', () => {
     } as ReturnType<typeof useIcp>)
 
     renderAnalysisPage()
+    const user = userEvent.setup()
 
     const analysisLink = await screen.findByRole('button', { name: /2026/ })
-    fireEvent.click(analysisLink)
+    await user.click(analysisLink)
 
-    // ICP tab panel is in the DOM (aria-hidden when inactive)
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: /icp summary/i })).toBeInTheDocument()
     })
 
-    // ICP content is in the tabpanel DOM even when tab is inactive (aria-hidden)
-    expect(screen.queryByText(/ideal customer profile/i, { hidden: true })).toBeInTheDocument()
-    expect(screen.queryByText(/updated/i, { hidden: true })).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: /icp summary/i }))
+
+    await waitFor(
+      () => {
+        expect(screen.getByText(/ideal customer profile/i)).toBeInTheDocument()
+        expect(screen.getByText(/updated/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 })

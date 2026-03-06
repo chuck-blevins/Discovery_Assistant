@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen } from '@testing-library/react'
 import { useTheme } from 'next-themes'
 import { ThemeTab } from '@/components/app/settings/ThemeTab'
@@ -12,7 +12,7 @@ describe('ThemeTab', () => {
       theme: 'system',
       setTheme: vi.fn(),
       resolvedTheme: 'light',
-    } as ReturnType<typeof useTheme>)
+    } as unknown as ReturnType<typeof useTheme>)
   })
 
   it('renders Appearance label and theme select with Light, Dark, System options', () => {
@@ -33,7 +33,7 @@ describe('ThemeTab', () => {
       theme: 'dark',
       setTheme: vi.fn(),
       resolvedTheme: 'dark',
-    } as ReturnType<typeof useTheme>)
+    } as unknown as ReturnType<typeof useTheme>)
     renderWithProviders(<ThemeTab />)
     expect(screen.getByText('Dark')).toBeInTheDocument()
     expect(screen.queryByText(/Currently using:/)).not.toBeInTheDocument()
@@ -44,7 +44,7 @@ describe('ThemeTab', () => {
       theme: 'light',
       setTheme: vi.fn(),
       resolvedTheme: 'light',
-    } as ReturnType<typeof useTheme>)
+    } as unknown as ReturnType<typeof useTheme>)
     renderWithProviders(<ThemeTab />)
     expect(screen.getByText('Light')).toBeInTheDocument()
     expect(screen.queryByText(/Currently using:/)).not.toBeInTheDocument()

@@ -74,7 +74,7 @@ beforeEach(() => {
     data: null,
     isLoading: false,
     isError: false,
-  } as ReturnType<typeof usePersona>)
+  } as unknown as ReturnType<typeof usePersona>)
   vi.mocked(useIcp).mockReturnValue({
     data: undefined,
     isLoading: false,

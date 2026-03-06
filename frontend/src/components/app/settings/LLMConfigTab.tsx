@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import type { LLMSettingsResponse } from '@/types/api'
 
 const MODELS = [
   { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6 (Recommended)' },
@@ -28,15 +29,19 @@ export function LLMConfigTab({ isSetup = false }: { isSetup?: boolean }) {
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
   const [timeout, setTimeout] = useState<number | null>(null)
 
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings, isLoading } = useQuery<LLMSettingsResponse>({
     queryKey: ['settings', 'llm'],
     queryFn: getLLMSettings,
-    onSuccess: (data) => {
-      if (selectedModel === null) setSelectedModel(data.model)
-      if (timeout === null) setTimeout(data.timeout_seconds)
-      if (!data.api_key_is_set) setApiKeyMode('editing')
-    },
   })
+
+  const initialSyncedRef = useRef(false)
+  useEffect(() => {
+    if (!settings || initialSyncedRef.current) return
+    initialSyncedRef.current = true
+    setSelectedModel(settings.model)
+    setTimeout(settings.timeout_seconds)
+    if (!settings.api_key_is_set) setApiKeyMode('editing')
+  }, [settings])
 
   const mutation = useMutation({
     mutationFn: () =>
