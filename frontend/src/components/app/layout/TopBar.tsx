@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { Menu } from 'lucide-react'
+import { Menu, Sun, Moon, SunMoon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -24,6 +25,9 @@ export function TopBar() {
   const { data: client } = useClient(params.clientId)
   const { data: project } = useProject(params.projectId)
   const themeValue = theme ?? 'system'
+  const [themeSelectOpen, setThemeSelectOpen] = useState(false)
+
+  const ThemeIcon = themeValue === 'dark' ? Moon : themeValue === 'light' ? Sun : SunMoon
 
   const handleLogout = async () => {
     try {
@@ -96,19 +100,26 @@ export function TopBar() {
         )}
       </nav>
 
-      {/* Theme */}
-      <Tooltip>
+      {/* Theme — tooltip disabled when dropdown is open so it doesn't block selection */}
+      <Tooltip open={themeSelectOpen ? false : undefined}>
         <TooltipTrigger asChild>
           <span className="inline-flex">
             <Select
               value={themeValue}
               onValueChange={(v) => setTheme(v)}
+              open={themeSelectOpen}
+              onOpenChange={setThemeSelectOpen}
             >
               <SelectTrigger
                 size="sm"
-                className="w-[100px] h-8 mr-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                className={cn(
+                  'h-8 mr-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 gap-1.5',
+                  'w-[100px] data-[state=open]:w-[100px] data-[state=closed]:w-14 data-[state=closed]:min-w-14 data-[state=closed]:px-2',
+                  'data-[state=closed]:[&_[data-slot=select-value]]:sr-only'
+                )}
                 aria-label="Appearance: light, dark, or system"
               >
+                <ThemeIcon className="size-4 shrink-0" aria-hidden />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
