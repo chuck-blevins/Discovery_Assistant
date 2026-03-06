@@ -38,7 +38,7 @@ export default function SignUpPage() {
       await signup(email, password)
       // Auto-login after successful signup
       await login(email, password)
-      navigate('/dashboard')
+      navigate('/settings?setup=true')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign up failed')
     } finally {

@@ -33,6 +33,7 @@ from app.services import (
     icp_service,
     persona_service,
     project_service,
+    settings_service,
 )
 
 logger = logging.getLogger(__name__)
@@ -161,10 +162,28 @@ async def stream_analysis(
                     yield _sse({"type": "progress", "stage": "Parsing documents", "pct": 30})
                     yield _sse({"type": "progress", "stage": "Analyzing with Claude", "pct": 50})
 
+                    # Load effective LLM settings (DB overrides env)
+                    llm = await settings_service.get_llm_settings(gen_db, user_id)
+                    llm_kwargs = {
+                        "model": llm["model"],
+                        "api_key": llm["_raw_api_key"],
+                        "timeout": float(llm["timeout_seconds"]),
+                    }
+
+                    # Map objective to analysis_type key for prompt lookup
+                    _obj_to_type = {
+                        "positioning": "positioning",
+                        "persona-buildout": "persona_buildout",
+                        "icp-refinement": "icp_refinement",
+                    }
+
                     if objective == "positioning":
+                        prompt_text = await settings_service.get_prompt_text(gen_db, user_id, "positioning")
                         result = await claude_service.run_positioning_analysis(
                             objective=objective,
                             data_sources=sources,
+                            system_prompt=prompt_text,
+                            **llm_kwargs,
                         )
                         _pr = result["positioning_result"]
                         score_for_project = _pr["confidence_score"] if _pr.get("confidence_score") is not None else 0.0
@@ -192,9 +211,12 @@ async def stream_analysis(
                             },
                         }
                     elif objective == "persona-buildout":
+                        prompt_text = await settings_service.get_prompt_text(gen_db, user_id, "persona_buildout")
                         result = await claude_service.run_persona_analysis(
                             objective=objective,
                             data_sources=sources,
+                            system_prompt=prompt_text,
+                            **llm_kwargs,
                         )
                         pd = result["persona_data"]
                         score_for_project = pd.get("confidence_score") if pd.get("confidence_score") is not None else 0.0
@@ -222,9 +244,12 @@ async def stream_analysis(
                             },
                         }
                     elif objective == "icp-refinement":
+                        prompt_text = await settings_service.get_prompt_text(gen_db, user_id, "icp_refinement")
                         result = await claude_service.run_icp_analysis(
                             objective=objective,
                             data_sources=sources,
+                            system_prompt=prompt_text,
+                            **llm_kwargs,
                         )
                         idata = result["icp_data"]
                         score_for_project = idata.get("confidence_score") if idata.get("confidence_score") is not None else 0.0
@@ -253,11 +278,14 @@ async def stream_analysis(
                             },
                         }
                     else:
+                        prompt_text = await settings_service.get_prompt_text(gen_db, user_id, "problem_validation")
                         result = await claude_service.run_analysis(
                             objective=objective,
                             assumed_problem=assumed_problem,
                             target_segments=target_segments,
                             data_sources=sources,
+                            system_prompt=prompt_text,
+                            **llm_kwargs,
                         )
                         score_for_project = result["confidence_score"]
                         yield _sse({"type": "progress", "stage": "Extracting insights", "pct": 80})
@@ -295,11 +323,14 @@ async def stream_analysis(
 
                     # Story 6-1: generate next-step recommendations (optional; don't fail analysis)
                     try:
+                        rec_prompt = await settings_service.get_prompt_text(gen_db, user_id, "recommendations")
                         rec = await claude_service.run_recommendations_generation(
                             project_name=project.name,
                             objective=objective,
                             confidence_score=score_for_project,
                             source_count=len(sources),
+                            system_prompt=rec_prompt,
+                            **llm_kwargs,
                         )
                         analysis.recommendations = rec
                         result_payload["recommendations"] = rec
@@ -395,10 +426,20 @@ async def run_analysis(
     lock = await _acquire_project_analysis_lock(project_id)
     async with lock:
         try:
+            llm = await settings_service.get_llm_settings(db, current_user.id)
+            llm_kwargs = {
+                "model": llm["model"],
+                "api_key": llm["_raw_api_key"],
+                "timeout": float(llm["timeout_seconds"]),
+            }
+
             if project.objective == "positioning":
+                prompt_text = await settings_service.get_prompt_text(db, current_user.id, "positioning")
                 result = await claude_service.run_positioning_analysis(
                     objective=project.objective,
                     data_sources=sources,
+                    system_prompt=prompt_text,
+                    **llm_kwargs,
                 )
                 _pr = result["positioning_result"]
                 score_for_project = _pr["confidence_score"] if _pr.get("confidence_score") is not None else 0.0
@@ -414,9 +455,12 @@ async def run_analysis(
                     positioning_result=result["positioning_result"],
                 )
             elif project.objective == "persona-buildout":
+                prompt_text = await settings_service.get_prompt_text(db, current_user.id, "persona_buildout")
                 result = await claude_service.run_persona_analysis(
                     objective=project.objective,
                     data_sources=sources,
+                    system_prompt=prompt_text,
+                    **llm_kwargs,
                 )
                 pd = result["persona_data"]
                 score_for_project = pd.get("confidence_score") if pd.get("confidence_score") is not None else 0.0
@@ -433,9 +477,12 @@ async def run_analysis(
                     allow_empty_insights=True,
                 )
             elif project.objective == "icp-refinement":
+                prompt_text = await settings_service.get_prompt_text(db, current_user.id, "icp_refinement")
                 result = await claude_service.run_icp_analysis(
                     objective=project.objective,
                     data_sources=sources,
+                    system_prompt=prompt_text,
+                    **llm_kwargs,
                 )
                 idata = result["icp_data"]
                 score_for_project = idata.get("confidence_score") if idata.get("confidence_score") is not None else 0.0
@@ -452,11 +499,14 @@ async def run_analysis(
                     allow_empty_insights=True,
                 )
             else:
+                prompt_text = await settings_service.get_prompt_text(db, current_user.id, "problem_validation")
                 result = await claude_service.run_analysis(
                     objective=project.objective,
                     assumed_problem=assumed_problem,
                     target_segments=list(project.target_segments),
                     data_sources=sources,
+                    system_prompt=prompt_text,
+                    **llm_kwargs,
                 )
                 score_for_project = result["confidence_score"]
                 analysis = await analysis_service.create_analysis(
@@ -472,11 +522,14 @@ async def run_analysis(
 
             # Story 6-1: generate next-step recommendations (optional; don't fail analysis)
             try:
+                rec_prompt = await settings_service.get_prompt_text(db, current_user.id, "recommendations")
                 rec = await claude_service.run_recommendations_generation(
                     project_name=project.name,
                     objective=project.objective,
                     confidence_score=score_for_project,
                     source_count=len(sources),
+                    system_prompt=rec_prompt,
+                    **llm_kwargs,
                 )
                 analysis.recommendations = rec
             except Exception as rec_exc:

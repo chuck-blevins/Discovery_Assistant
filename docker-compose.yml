@@ -46,6 +46,7 @@ services:
       - backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/discovery_app
+      # LangSmith: controlled by backend/.env (LANGSMITH_TRACING, LANGSMITH_API_KEY, LANGSMITH_PROJECT)
       STORAGE_ENDPOINT_URL: http://minio:9000
       STORAGE_ACCESS_KEY: minioadmin
       STORAGE_SECRET_KEY: minioadmin

@@ -1,4 +1,8 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+const TOKEN_KEY = 'discovery_access_token'
+
+/** In-memory token so redirect/navigate in same session has token before localStorage is read. */
+let memoryToken: string | null = null
 
 export interface UserInfo {
   id: string
@@ -22,6 +26,15 @@ export interface ApiError {
   detail: string | { msg: string; loc: string[] }[]
 }
 
+/** Auth headers for use by other API modules (e.g. lib/api) so requests work before cookie is attached. */
+export function getAuthHeaders(): Record<string, string> {
+  const token = memoryToken ?? (typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null)
+  if (token) {
+    return { Authorization: `Bearer ${token}` }
+  }
+  return {}
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -31,6 +44,7 @@ async function request<T>(
     credentials: 'include', // send/receive HTTP-only cookies
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeaders(),
       ...options.headers,
     },
   })
@@ -54,15 +68,29 @@ export async function signup(email: string, password: string): Promise<SignupRes
   })
 }
 
-export async function login(email: string, password: string): Promise<LoginResponse> {
-  return request<LoginResponse>('/auth/login', {
+export async function login(email: string, password: string, rememberMe = false): Promise<LoginResponse> {
+  const data = await request<LoginResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
+  memoryToken = data.access_token
+  if (rememberMe && typeof localStorage !== 'undefined') {
+    localStorage.setItem(TOKEN_KEY, data.access_token)
+    localStorage.setItem('rememberMe', 'true')
+  }
+  return data
 }
 
 export async function logout(): Promise<void> {
-  await request('/auth/logout', { method: 'POST' })
+  try {
+    await request('/auth/logout', { method: 'POST' })
+  } finally {
+    memoryToken = null
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem('rememberMe')
+    }
+  }
 }
 
 export async function validateSession(): Promise<UserInfo> {
