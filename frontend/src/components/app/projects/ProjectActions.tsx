@@ -71,16 +71,18 @@ export function ProjectActions({ project, clientId, onEdit }: ProjectActionsProp
         <AlertDialog>
           <Tooltip>
             <TooltipTrigger asChild>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={archiveMutation.isPending}
-                  aria-label="Archive project"
-                >
-                  <Archive className="size-4" />
-                </Button>
-              </AlertDialogTrigger>
+              <span className="inline-flex">
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={archiveMutation.isPending}
+                    aria-label="Archive project"
+                  >
+                    <Archive className="size-4" />
+                  </Button>
+                </AlertDialogTrigger>
+              </span>
             </TooltipTrigger>
             <TooltipContent>Archive project</TooltipContent>
           </Tooltip>
@@ -122,16 +124,18 @@ export function ProjectActions({ project, clientId, onEdit }: ProjectActionsProp
       <AlertDialog>
         <Tooltip>
           <TooltipTrigger asChild>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={deleteMutation.isPending}
-                aria-label="Delete project"
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </AlertDialogTrigger>
+            <span className="inline-flex">
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={deleteMutation.isPending}
+                  aria-label="Delete project"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </AlertDialogTrigger>
+            </span>
           </TooltipTrigger>
           <TooltipContent>Delete project</TooltipContent>
         </Tooltip>
