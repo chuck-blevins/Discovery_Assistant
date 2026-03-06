@@ -1,15 +1,22 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { axe } from 'vitest-axe'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AppLayout } from '@/components/app/layout/AppLayout'
 
+vi.mock('@/hooks/useClients', () => ({ useClient: vi.fn().mockReturnValue({ data: undefined }) }))
+vi.mock('@/hooks/useProjects', () => ({ useProject: vi.fn().mockReturnValue({ data: undefined }) }))
+
 function renderWithRouter(ui: React.ReactElement) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <TooltipProvider>
-      <MemoryRouter>{ui}</MemoryRouter>
-    </TooltipProvider>
+    <QueryClientProvider client={qc}>
+      <TooltipProvider>
+        <MemoryRouter>{ui}</MemoryRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   )
 }
 

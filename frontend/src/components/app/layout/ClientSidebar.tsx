@@ -166,20 +166,27 @@ export function ClientSidebar() {
         )}
 
         {/* Collapse toggle */}
-        <button
-          onClick={toggle}
-          className={cn(
-            'flex items-center justify-center w-full rounded p-2',
-            'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
-          )}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4 text-zinc-400" aria-hidden="true" />
-          ) : (
-            <ChevronLeft className="w-4 h-4 text-zinc-400" aria-hidden="true" />
-          )}
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={toggle}
+              className={cn(
+                'flex items-center justify-center w-full rounded p-2',
+                'hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400'
+              )}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {collapsed ? (
+                <ChevronRight className="w-4 h-4 text-zinc-400" aria-hidden="true" />
+              ) : (
+                <ChevronLeft className="w-4 h-4 text-zinc-400" aria-hidden="true" />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            {collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          </TooltipContent>
+        </Tooltip>
       </div>
     </aside>
   )

@@ -16,7 +16,7 @@ export function ClientRow({ client, onEdit }: ClientRowProps) {
       <TableCell className="font-medium">
         <Link
           to={`/${client.id}`}
-          className="text-zinc-900 hover:text-zinc-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 rounded"
+          className="text-foreground hover:text-muted-foreground hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
         >
           {client.name}
         </Link>
@@ -24,11 +24,11 @@ export function ClientRow({ client, onEdit }: ClientRowProps) {
       <TableCell>{client.market_type ?? '—'}</TableCell>
       <TableCell>
         {client.status === 'archived' ? (
-          <Badge variant="outline" className="bg-gray-100 text-gray-600 border-gray-300">
+          <Badge variant="secondary" className="border-border">
             Archived
           </Badge>
         ) : (
-          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+          <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700">
             Active
           </Badge>
         )}

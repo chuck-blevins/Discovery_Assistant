@@ -92,7 +92,7 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
       } else {
         const created = await createMutation.mutateAsync(payload)
         handleClose(false)
-        navigate(`/${created.id}`)
+        navigate(`/${created.id}`, { state: { clientJustCreated: true, clientName: created.name } })
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong'

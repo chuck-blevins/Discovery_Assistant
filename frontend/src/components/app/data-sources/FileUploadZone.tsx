@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -11,10 +12,13 @@ const ALLOWED_EXTENSIONS = new Set(['.pdf', '.csv', '.txt', '.md'])
 
 interface FileUploadZoneProps {
   projectId: string
+  /** When provided, an Analyze button is shown (navigates to project analyze page). */
+  clientId?: string
 }
 
-export function FileUploadZone({ projectId }: FileUploadZoneProps) {
+export function FileUploadZone({ projectId, clientId }: FileUploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate()
   // Use a counter to correctly handle dragLeave firing on child elements
   const [dragCounter, setDragCounter] = useState(0)
   const isDragOver = dragCounter > 0
@@ -25,6 +29,7 @@ export function FileUploadZone({ projectId }: FileUploadZoneProps) {
   const [fileError, setFileError] = useState<string | null>(null)
 
   const uploadMutation = useUploadFiles(projectId)
+  const hasFiles = files.length >= 1
 
   function validateAndSetFiles(incoming: File[]) {
     const wrongType = incoming.find((f) => {
@@ -87,50 +92,8 @@ export function FileUploadZone({ projectId }: FileUploadZoneProps) {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <div
-        role="region"
-        aria-label="File drop zone"
-        onDragEnter={(e) => { e.preventDefault(); setDragCounter((c) => c + 1) }}
-        onDragOver={(e) => e.preventDefault()}
-        onDragLeave={() => setDragCounter((c) => Math.max(0, c - 1))}
-        onDrop={(e) => { e.preventDefault(); setDragCounter(0); handleDrop(e) }}
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click() }}
-        tabIndex={0}
-        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-          isDragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/30 hover:border-primary/50'
-        }`}
-      >
-        <p className="text-sm text-muted-foreground">
-          Drag &amp; drop files here, or click to browse
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">PDF, CSV, TXT, MD — max 10 MB per file</p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.csv,.txt,.md"
-          multiple
-          className="sr-only"
-          aria-label="Upload files"
-          onChange={handleFileChange}
-        />
-      </div>
-
-      {fileError && (
-        <p role="alert" className="text-sm text-destructive mt-2">{fileError}</p>
-      )}
-
-      {files.length > 0 && (
-        <ul className="mt-2 space-y-1">
-          {files.map((f) => (
-            <li key={`${f.name}-${f.size}`} className="text-xs text-muted-foreground">
-              {f.name} ({(f.size / 1024).toFixed(1)} KB)
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* 1. Collector / Creator / Purpose fields (top) */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <Label htmlFor="upload-collected-date">Collected date</Label>
           <Input
@@ -162,13 +125,79 @@ export function FileUploadZone({ projectId }: FileUploadZoneProps) {
         </div>
       </div>
 
-      <Button
-        type="submit"
-        className="mt-4"
-        disabled={files.length === 0 || uploadMutation.isPending}
-      >
-        {uploadMutation.isPending ? 'Uploading…' : `Upload ${files.length > 0 ? `(${files.length})` : ''}`}
-      </Button>
+      {/* 2. Document selection list (drop zone + selected files) */}
+      <div className="mt-4">
+        <div
+          role="region"
+          aria-label="File drop zone"
+          aria-describedby="upload-helper-text"
+          onDragEnter={(e) => { e.preventDefault(); setDragCounter((c) => c + 1) }}
+          onDragOver={(e) => e.preventDefault()}
+          onDragLeave={() => setDragCounter((c) => Math.max(0, c - 1))}
+          onDrop={(e) => { e.preventDefault(); setDragCounter(0); handleDrop(e) }}
+          onClick={() => inputRef.current?.click()}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click() }}
+          tabIndex={0}
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            isDragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/30 hover:border-primary/50'
+          }`}
+        >
+          <p className="text-sm text-muted-foreground">
+            Drag &amp; drop files here, or click to browse
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">PDF, CSV, TXT, MD — max 10 MB per file</p>
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".pdf,.csv,.txt,.md"
+            multiple
+            className="sr-only"
+            aria-label="Upload files"
+            onChange={handleFileChange}
+          />
+        </div>
+
+        {fileError && (
+          <p role="alert" className="text-sm text-destructive mt-2">{fileError}</p>
+        )}
+
+        {files.length > 0 && (
+          <ul className="mt-2 space-y-1">
+            {files.map((f, i) => (
+              <li key={`${i}-${f.name}-${f.size}`} className="text-xs text-muted-foreground">
+                {f.name} ({(f.size / 1024).toFixed(1)} KB)
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Guidance note: below document selection list */}
+        <p id="upload-helper-text" className="text-sm text-muted-foreground mt-2">
+          You can select additional documents before uploading.
+        </p>
+      </div>
+
+      {/* 3. Upload + Analyze buttons — hidden until at least one document selected */}
+      {hasFiles && (
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button
+            type="submit"
+            disabled={uploadMutation.isPending}
+          >
+            {uploadMutation.isPending ? 'Uploading…' : `Upload (${files.length})`}
+          </Button>
+          {clientId && projectId && (
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Go to analysis"
+              onClick={() => navigate(`/${clientId}/${projectId}/analyze`)}
+            >
+              Analyze
+            </Button>
+          )}
+        </div>
+      )}
     </form>
   )
 }

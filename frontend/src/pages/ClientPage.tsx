@@ -1,4 +1,6 @@
-import { useParams } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -7,7 +9,17 @@ import { useClient } from '@/hooks/useClients'
 
 export default function ClientPage() {
   const { clientId } = useParams<{ clientId: string }>()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { clientJustCreated, clientName } = (location.state ?? {}) as { clientJustCreated?: boolean; clientName?: string }
   const { data: client, isLoading, isError } = useClient(clientId)
+
+  useEffect(() => {
+    if (clientJustCreated && clientName) {
+      toast.success(`"${clientName}" created successfully!`, { duration: 3000, closeButton: true })
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [clientJustCreated, clientName, navigate, location.pathname])
 
   if (isLoading) {
     return (
@@ -39,7 +51,7 @@ export default function ClientPage() {
           <p className="text-muted-foreground">{client.market_type}</p>
         )}
       </div>
-      <ProjectTable clientId={client.id} />
+      <ProjectTable clientId={client.id} clientName={client.name} />
     </>
   )
 }

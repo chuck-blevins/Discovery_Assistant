@@ -4,11 +4,13 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class IcpResponse(BaseModel):
     """ICP card for icp-refinement projects."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     project_id: uuid.UUID

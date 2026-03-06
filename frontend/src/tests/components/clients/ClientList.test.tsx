@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { axe } from 'vitest-axe'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { ClientList } from '@/components/app/clients/ClientList'
 import { useClientFormStore } from '@/stores/useClientFormStore'
 import type { ClientResponse } from '@/types/api'
@@ -48,7 +49,9 @@ function renderWithProviders(ui: React.ReactElement) {
   })
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <TooltipProvider delayDuration={0}>
+        <MemoryRouter>{ui}</MemoryRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { ClientActions } from '@/components/app/clients/ClientActions'
 import type { ClientResponse } from '@/types/api'
 
@@ -43,7 +45,9 @@ function renderWithProviders(ui: React.ReactElement) {
   })
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <TooltipProvider delayDuration={0}>
+        <MemoryRouter>{ui}</MemoryRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }
@@ -56,25 +60,25 @@ describe('ClientActions', () => {
   it('calls onEdit when Edit button is clicked', () => {
     const onEdit = vi.fn()
     renderWithProviders(<ClientActions client={activeClient} onEdit={onEdit} />)
-    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /edit client/i }))
     expect(onEdit).toHaveBeenCalledOnce()
   })
 
   it('shows "Archive" button for active clients', () => {
     renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
-    expect(screen.getByRole('button', { name: /^archive$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /archive client/i })).toBeInTheDocument()
   })
 
   it('shows "Unarchive" button for archived clients', () => {
     renderWithProviders(<ClientActions client={archivedClient} onEdit={vi.fn()} />)
-    expect(screen.getByRole('button', { name: /^unarchive$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /unarchive client/i })).toBeInTheDocument()
   })
 
   it('calls archiveClient with client id when Archive is clicked', async () => {
     vi.mocked(clientsApi.archiveClient).mockResolvedValue({ ...activeClient, status: 'archived', archived_at: '2026-02-01T00:00:00Z' })
     vi.mocked(clientsApi.listClients).mockResolvedValue([])
     renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^archive$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /archive client/i }))
     await waitFor(() => {
       expect(clientsApi.archiveClient).toHaveBeenCalledWith(activeClient.id)
     })
@@ -82,7 +86,7 @@ describe('ClientActions', () => {
 
   it('opens delete confirmation dialog when Delete is clicked', async () => {
     renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /delete client/i }))
     await waitFor(() => {
       expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     })
@@ -94,11 +98,10 @@ describe('ClientActions', () => {
     vi.mocked(clientsApi.deleteClient).mockResolvedValue(undefined)
     vi.mocked(clientsApi.listClients).mockResolvedValue([])
     renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /delete client/i }))
     await waitFor(() => {
       expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     })
-    // Trigger has aria-hidden when dialog is open; only the confirm button is accessible
     fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
     await waitFor(() => {
       expect(clientsApi.deleteClient).toHaveBeenCalledWith(activeClient.id)
@@ -107,11 +110,31 @@ describe('ClientActions', () => {
 
   it('does not call deleteClient when Cancel is clicked in confirmation', async () => {
     renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /delete client/i }))
     await waitFor(() => {
       expect(screen.getByRole('alertdialog')).toBeInTheDocument()
     })
     fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
     expect(clientsApi.deleteClient).not.toHaveBeenCalled()
+  })
+
+  it('shows "Edit client" tooltip on hover', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
+    const editBtn = screen.getByRole('button', { name: /edit client/i })
+    await user.hover(editBtn)
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip', { name: /edit client/i })).toBeInTheDocument()
+    })
+  })
+
+  it('shows "Archive client" tooltip on hover for active client', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<ClientActions client={activeClient} onEdit={vi.fn()} />)
+    const archiveBtn = screen.getByRole('button', { name: /archive client/i })
+    await user.hover(archiveBtn)
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip', { name: /archive client/i })).toBeInTheDocument()
+    })
   })
 })

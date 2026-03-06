@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { axe } from 'vitest-axe'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { ClientForm } from '@/components/app/clients/ClientForm'
 import type { ClientResponse } from '@/types/api'
 
@@ -14,6 +15,12 @@ vi.mock('@/api/clients', () => ({
   archiveClient: vi.fn(),
   deleteClient: vi.fn(),
 }))
+
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async (importActual) => {
+  const actual = await importActual<typeof import('react-router-dom')>()
+  return { ...actual, useNavigate: () => mockNavigate }
+})
 
 import * as clientsApi from '@/api/clients'
 
@@ -39,7 +46,9 @@ function renderWithProviders(ui: React.ReactElement) {
   })
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <MemoryRouter>
+        <TooltipProvider delayDuration={0}>{ui}</TooltipProvider>
+      </MemoryRouter>
     </QueryClientProvider>
   )
 }
@@ -68,7 +77,7 @@ describe('ClientForm — create mode', () => {
     expect(screen.getByText('Name is required')).toBeInTheDocument()
   })
 
-  it('calls onOpenChange(false) on successful create', async () => {
+  it('calls onOpenChange(false) and navigates with creation state on successful create', async () => {
     const mockCreated: ClientResponse = { ...existingClient, id: 'new-id', name: 'Beta Inc' }
     vi.mocked(clientsApi.createClient).mockResolvedValue(mockCreated)
     vi.mocked(clientsApi.listClients).mockResolvedValue([])
@@ -83,6 +92,9 @@ describe('ClientForm — create mode', () => {
 
     await waitFor(() => {
       expect(onOpenChange).toHaveBeenCalledWith(false)
+    })
+    expect(mockNavigate).toHaveBeenCalledWith('/new-id', {
+      state: { clientJustCreated: true, clientName: 'Beta Inc' },
     })
   })
 

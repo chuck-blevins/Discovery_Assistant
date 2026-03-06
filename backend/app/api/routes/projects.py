@@ -10,6 +10,7 @@ Routes:
 """
 
 import asyncio
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -32,6 +33,7 @@ from app.services import (
 )
 from app.utils.strength import confidence_to_strength, truncate_assumed_problem
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["projects"])
 
 
@@ -177,6 +179,7 @@ async def get_project_icp(
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     icp = await icp_service.get_icp_by_project(db, project_id)
+    logger.info("GET /projects/%s/icp -> found=%s", project_id, icp is not None)
     if not icp:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No ICP for this project")
     return IcpResponse.model_validate(icp)
