@@ -57,6 +57,13 @@ FastAPI middleware stack order:
 import logging
 import os
 
+# LangSmith: ensure tracing is off unless explicitly enabled with a valid key (avoids 403 on ingest)
+_tracing = (os.getenv("LANGSMITH_TRACING") or "").strip().lower()
+if _tracing not in ("true", "1"):
+    os.environ["LANGSMITH_TRACING"] = "false"
+elif not (os.getenv("LANGSMITH_API_KEY") or "").strip():
+    os.environ["LANGSMITH_TRACING"] = "false"
+
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
