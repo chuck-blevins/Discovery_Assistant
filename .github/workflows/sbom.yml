@@ -1,34 +1,35 @@
-# Export SBOM from GitHub dependency graph and commit to sboms/
-# Runs after push to main so the graph reflects the latest manifests.
+# Export SBOM from GitHub dependency graph.
+# - On release: attach SBOM as a release asset (no PR needed).
+# - Manual run: upload SBOM as a workflow artifact for download; commit to sboms/ yourself if desired.
 # API: https://docs.github.com/en/rest/dependency-graph/sbom
 name: Export SBOM
 on:
-  push:
-    branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write   # upload release asset
 
 jobs:
   sbom:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Fetch SBOM from dependency graph
         id: fetch
         run: |
           REPO="${{ github.repository }}"
           OWNER="${REPO%/*}"
           REPO_NAME="${REPO#*/}"
-          SHA="${{ github.sha }}"
-          SHORT_SHA="${SHA::7}"
-          FILENAME="sboms/${OWNER}_${REPO_NAME}_${SHORT_SHA}.json"
           mkdir -p sboms
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            FILENAME="sboms/${OWNER}_${REPO_NAME}_${TAG}.json"
+          else
+            SHA="${{ github.sha }}"
+            SHORT_SHA="${SHA::7}"
+            FILENAME="sboms/${OWNER}_${REPO_NAME}_${SHORT_SHA}.json"
+          fi
           curl -sSfL -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${REPO}/dependency-graph/sbom" \
@@ -36,14 +37,22 @@ jobs:
           echo "file=${FILENAME}" >> $GITHUB_OUTPUT
           echo "Exported SBOM to ${FILENAME}"
 
-      - name: Commit SBOM if changed
+      - name: Upload SBOM to release
+        if: github.event_name == 'release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add sboms/
-          if git diff --staged --quiet; then
-            echo "No SBOM changes to commit"
-          else
-            git commit -m "chore: update SBOM from dependency graph [skip ci]"
-            git push
-          fi
+          UPLOAD_URL="${{ github.event.release.upload_url }}"
+          NAME="sbom-${{ github.event.release.tag_name }}.json"
+          curl -sSfL -X POST \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @"${{ steps.fetch.outputs.file }}" \
+            "${UPLOAD_URL%%\{*}?name=${NAME}"
+
+      - name: Upload SBOM as artifact (manual run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: ${{ steps.fetch.outputs.file }}

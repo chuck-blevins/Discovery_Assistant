@@ -191,18 +191,18 @@ Discovery_app/
 
 ## Supply chain and SBOMs
 
-SBOMs are stored in the **`sboms/`** directory. Files are **SPDX 2.3** (e.g. `{owner}_{repo}_{sha}_v1.0.0.json`) and list packages (npm, pip, etc.) with versions, licenses, and PURLs.
+SBOMs are **SPDX 2.3** and list packages (npm, pip, etc.) with versions, licenses, and PURLs. They can live in the **`sboms/`** directory (if you commit them) and/or as release assets.
 
 ### How SBOMs are generated
 
 | When | How | Notes |
 |------|-----|--------|
-| **After push (CI)** | GitHub Actions calls the [Dependency graph SBOM API](https://docs.github.com/en/rest/dependency-graph/sbom) and commits the result into `sboms/`. | Same as **Insights → Dependency graph → Export SBOM**. Dependency graph updates on push, so the SBOM reflects the committed code. |
-| **Before commit (local)** | Not from GitHub: the dependency graph is built from the repo after push. To have an SBOM *before* commit, use a local tool (e.g. [syft](https://github.com/anchore/syft)) to scan `frontend/` and `backend/` and write SPDX/CycloneDX into `sboms/`. | Useful for local audits; format may differ slightly from GitHub’s export. |
+| **On release** | The **Export SBOM** workflow runs when you publish a release. It fetches the SBOM from the [Dependency graph API](https://docs.github.com/en/rest/dependency-graph/sbom) and attaches it as a release asset (e.g. `sbom-v1.0.0.json`). | No PR or push from Actions; the SBOM is tied to the release and downloadable from the release page. |
+| **Manual run** | **Actions** → **Export SBOM** → **Run workflow**. The run uploads the SBOM as a workflow artifact. Download it and commit to `sboms/` yourself if you want it in the repo. | Use when you want an SBOM without cutting a release. |
+| **UI export** | **Insights** → **Dependency graph** → **Export SBOM**, then save the file into `sboms/` with a clear name. | Same data as the workflow; good for one-off snapshots. |
+| **Local (pre-commit)** | Use a local tool (e.g. [syft](https://github.com/anchore/syft)) to scan `frontend/` and `backend/` and write SPDX/CycloneDX into `sboms/`. | Format may differ slightly from GitHub’s export. |
 
-**Manual export:** **Insights** → **Dependency graph** → **Export SBOM**, then save the file into `sboms/` with a clear name (e.g. include a version or date).
-
-**Use:** Audit dependencies, feed security tooling, or meet SBOM requirements. Re-export (or re-run the workflow) after significant dependency changes.
+**Use:** Audit dependencies, feed security tooling, or meet SBOM requirements.
 
 ---
 
