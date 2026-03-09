@@ -280,14 +280,18 @@ _VALID_PAYLOAD = {
 }
 
 
+def _patch_make_client(messages_create_return):
+    """Patch _make_client to return a mock client whose messages.create returns the given value."""
+    mock_client = MagicMock()
+    mock_client.messages.create = AsyncMock(return_value=messages_create_return)
+    return patch("app.services.claude_service._make_client", return_value=mock_client)
+
+
 class TestRunAnalysis:
     @pytest.mark.asyncio
     async def test_successful_analysis_returns_all_keys(self):
         from app.services.claude_service import run_analysis
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(
-                return_value=_make_mock_response(_VALID_PAYLOAD)
-            )
+        with _patch_make_client(_make_mock_response(_VALID_PAYLOAD)):
             result = await run_analysis("problem-validation", None, [], [])
         assert set(result.keys()) == {
             "confidence_score", "insights", "tokens_used", "cost_usd", "raw_response"
@@ -296,10 +300,7 @@ class TestRunAnalysis:
     @pytest.mark.asyncio
     async def test_confidence_score_matches_formula(self):
         from app.services.claude_service import run_analysis, calculate_confidence_score
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(
-                return_value=_make_mock_response(_VALID_PAYLOAD)
-            )
+        with _patch_make_client(_make_mock_response(_VALID_PAYLOAD)):
             result = await run_analysis("problem-validation", None, [], [])
         expected = calculate_confidence_score(0.8, 0.7, 0.9)
         assert result["confidence_score"] == expected
@@ -307,30 +308,21 @@ class TestRunAnalysis:
     @pytest.mark.asyncio
     async def test_tokens_used_is_sum_of_input_and_output(self):
         from app.services.claude_service import run_analysis
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(
-                return_value=_make_mock_response(_VALID_PAYLOAD, input_tokens=1000, output_tokens=500)
-            )
+        with _patch_make_client(_make_mock_response(_VALID_PAYLOAD, input_tokens=1000, output_tokens=500)):
             result = await run_analysis("problem-validation", None, [], [])
         assert result["tokens_used"] == 1500
 
     @pytest.mark.asyncio
     async def test_cost_usd_is_calculated(self):
         from app.services.claude_service import run_analysis, calculate_cost, CLAUDE_MODEL
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(
-                return_value=_make_mock_response(_VALID_PAYLOAD, input_tokens=1000, output_tokens=500)
-            )
+        with _patch_make_client(_make_mock_response(_VALID_PAYLOAD, input_tokens=1000, output_tokens=500)):
             result = await run_analysis("problem-validation", None, [], [])
         assert result["cost_usd"] == calculate_cost(1000, 500, CLAUDE_MODEL)
 
     @pytest.mark.asyncio
     async def test_insights_list_passed_through(self):
         from app.services.claude_service import run_analysis
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(
-                return_value=_make_mock_response(_VALID_PAYLOAD)
-            )
+        with _patch_make_client(_make_mock_response(_VALID_PAYLOAD)):
             result = await run_analysis("problem-validation", None, [], [])
         assert len(result["insights"]) == 1
         assert result["insights"][0]["type"] == "finding"
@@ -339,10 +331,7 @@ class TestRunAnalysis:
     async def test_missing_required_keys_raises_value_error(self):
         from app.services.claude_service import run_analysis
         incomplete = {"some": "junk"}
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(
-                return_value=_make_mock_response(incomplete)
-            )
+        with _patch_make_client(_make_mock_response(incomplete)):
             with pytest.raises(ValueError, match="missing required keys"):
                 await run_analysis("problem-validation", None, [], [])
 
@@ -353,18 +342,14 @@ class TestRunAnalysis:
         mock_response.content = [MagicMock(text="not valid json at all")]
         mock_response.usage.input_tokens = 100
         mock_response.usage.output_tokens = 50
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(return_value=mock_response)
+        with _patch_make_client(mock_response):
             with pytest.raises(json.JSONDecodeError):
                 await run_analysis("problem-validation", None, [], [])
 
     @pytest.mark.asyncio
     async def test_raw_response_preserved(self):
         from app.services.claude_service import run_analysis
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(
-                return_value=_make_mock_response(_VALID_PAYLOAD)
-            )
+        with _patch_make_client(_make_mock_response(_VALID_PAYLOAD)):
             result = await run_analysis("problem-validation", None, [], [])
         assert result["raw_response"] == json.dumps(_VALID_PAYLOAD)
 
@@ -386,10 +371,7 @@ class TestRunRecommendationsGeneration:
     @pytest.mark.asyncio
     async def test_returns_all_required_keys(self):
         from app.services.claude_service import run_recommendations_generation
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(
-                return_value=_make_mock_response(_VALID_RECOMMENDATIONS_PAYLOAD)
-            )
+        with _patch_make_client(_make_mock_response(_VALID_RECOMMENDATIONS_PAYLOAD)):
             result = await run_recommendations_generation(
                 "My Project", "problem-validation", 0.7, 5
             )
@@ -405,10 +387,7 @@ class TestRunRecommendationsGeneration:
     async def test_invalid_suggested_next_objective_normalized_to_none(self):
         from app.services.claude_service import run_recommendations_generation
         payload = {**_VALID_RECOMMENDATIONS_PAYLOAD, "suggested_next_objective": "invalid-objective"}
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(
-                return_value=_make_mock_response(payload)
-            )
+        with _patch_make_client(_make_mock_response(payload)):
             result = await run_recommendations_generation(
                 "Proj", "problem-validation", 0.5, 3
             )
@@ -417,9 +396,6 @@ class TestRunRecommendationsGeneration:
     @pytest.mark.asyncio
     async def test_missing_required_keys_raises(self):
         from app.services.claude_service import run_recommendations_generation
-        with patch("app.services.claude_service._client") as mock_client:
-            mock_client.messages.create = AsyncMock(
-                return_value=_make_mock_response({"action_items": []})
-            )
+        with _patch_make_client(_make_mock_response({"action_items": []})):
             with pytest.raises(ValueError, match="missing required keys"):
                 await run_recommendations_generation("P", "positioning", 0.6, 2)
