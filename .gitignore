@@ -60,7 +60,6 @@ _bmad-output/*
 _bmad/*
 .claude
 product-context.md
-.github/
 
 # Misc
 *.env.local
