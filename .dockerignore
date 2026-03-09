@@ -27,6 +27,13 @@ frontend/dist
 .cursor
 *.md
 !backend/README*
+.github/
+.github/*
+.claude
+.claude/*
 
 # BMAD / docs
 _bmad-output
+_bmad
+_bmad-output/*
+_bmad/*
