@@ -3,7 +3,7 @@ anthropic>=0.49.0
 httpx>=0.25.0
 
 # LangSmith tracing (optional; set LANGSMITH_TRACING=true in .env to enable)
-langsmith>=0.2.0,<0.4.0
+langsmith>=0.2.0,<0.8.0
 
 # Core dependencies
 fastapi==0.104.1
