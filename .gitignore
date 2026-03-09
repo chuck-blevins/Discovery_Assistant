@@ -55,6 +55,10 @@ node_modules/
 
 # BMAD / generated outputs
 _bmad-output/
+_bmad/
+.claude
+product-context.md
+.github/
 
 # Misc
 *.env.local
