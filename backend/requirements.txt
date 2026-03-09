@@ -7,7 +7,7 @@ langsmith>=0.2.0,<0.4.0
 
 # Core dependencies
 fastapi==0.104.1
-uvicorn==0.24.0
+uvicorn==0.41.0
 sqlalchemy==2.0.46
 email-validator>=2.0
 alembic>=1.13.0
