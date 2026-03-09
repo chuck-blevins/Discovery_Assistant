@@ -1,7 +1,7 @@
 # Development: run Vite dev server so frontend starts with docker compose.
 # Not for production (use build + nginx for that).
 # Use slim (Debian) instead of Alpine so esbuild native bindings run reliably; Alpine can cause "The service was stopped".
-FROM node:20-slim
+FROM node:25-slim
 
 WORKDIR /app
 
