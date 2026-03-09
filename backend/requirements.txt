@@ -15,7 +15,7 @@ asyncpg>=0.30.0
 python-dotenv==1.0.0
 bcrypt==4.1.2
 python-jose[cryptography]==3.3.0
-cryptography==42.0.2
+cryptography==46.0.5
 
 # File upload & parsing
 python-multipart>=0.0.6
