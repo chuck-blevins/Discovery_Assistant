@@ -183,8 +183,26 @@ Discovery_app/
 │   └── package.json
 ├── docker-compose.yml
 ├── Makefile
+├── sboms/                  # Software Bill of Materials (see below)
 └── README.md
 ```
+
+---
+
+## Supply chain and SBOMs
+
+SBOMs are stored in the **`sboms/`** directory. Files are **SPDX 2.3** (e.g. `{owner}_{repo}_{sha}_v1.0.0.json`) and list packages (npm, pip, etc.) with versions, licenses, and PURLs.
+
+### How SBOMs are generated
+
+| When | How | Notes |
+|------|-----|--------|
+| **After push (CI)** | GitHub Actions calls the [Dependency graph SBOM API](https://docs.github.com/en/rest/dependency-graph/sbom) and commits the result into `sboms/`. | Same as **Insights → Dependency graph → Export SBOM**. Dependency graph updates on push, so the SBOM reflects the committed code. |
+| **Before commit (local)** | Not from GitHub: the dependency graph is built from the repo after push. To have an SBOM *before* commit, use a local tool (e.g. [syft](https://github.com/anchore/syft)) to scan `frontend/` and `backend/` and write SPDX/CycloneDX into `sboms/`. | Useful for local audits; format may differ slightly from GitHub’s export. |
+
+**Manual export:** **Insights** → **Dependency graph** → **Export SBOM**, then save the file into `sboms/` with a clear name (e.g. include a version or date).
+
+**Use:** Audit dependencies, feed security tooling, or meet SBOM requirements. Re-export (or re-run the workflow) after significant dependency changes.
 
 ---
 

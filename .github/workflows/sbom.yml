@@ -1,0 +1,49 @@
+# Export SBOM from GitHub dependency graph and commit to sboms/
+# Runs after push to main so the graph reflects the latest manifests.
+# API: https://docs.github.com/en/rest/dependency-graph/sbom
+name: Export SBOM
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch SBOM from dependency graph
+        id: fetch
+        run: |
+          REPO="${{ github.repository }}"
+          OWNER="${REPO%/*}"
+          REPO_NAME="${REPO#*/}"
+          SHA="${{ github.sha }}"
+          SHORT_SHA="${SHA::7}"
+          FILENAME="sboms/${OWNER}_${REPO_NAME}_${SHORT_SHA}.json"
+          mkdir -p sboms
+          curl -sSfL -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${REPO}/dependency-graph/sbom" \
+            -o "${FILENAME}"
+          echo "file=${FILENAME}" >> $GITHUB_OUTPUT
+          echo "Exported SBOM to ${FILENAME}"
+
+      - name: Commit SBOM if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sboms/
+          if git diff --staged --quiet; then
+            echo "No SBOM changes to commit"
+          else
+            git commit -m "chore: update SBOM from dependency graph [skip ci]"
+            git push
+          fi
