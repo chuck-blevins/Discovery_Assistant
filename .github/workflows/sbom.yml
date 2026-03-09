@@ -35,6 +35,7 @@ jobs:
             "https://api.github.com/repos/${REPO}/dependency-graph/sbom" \
             -o "${FILENAME}"
           echo "file=${FILENAME}" >> $GITHUB_OUTPUT
+          echo "branch=chore/sbom-${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "Exported SBOM to ${FILENAME}"
 
       - name: Upload SBOM to release
