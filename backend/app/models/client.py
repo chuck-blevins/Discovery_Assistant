@@ -24,6 +24,11 @@ class Client(Base):
     assumed_solution: Mapped[str | None] = mapped_column(Text(), nullable=True)
     assumed_market: Mapped[str | None] = mapped_column(Text(), nullable=True)
     initial_notes: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    contact_name: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    contact_email: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    contact_phone: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    website: Mapped[str | None] = mapped_column(Text(), nullable=True)
+    engagement_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.now, nullable=False

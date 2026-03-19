@@ -47,6 +47,21 @@ class RecommendationsResponse(BaseModel):
     suggested_next_objective: Optional[str] = None
 
 
+class OnboardingThemeItem(BaseModel):
+    text: str
+    frequency: int
+
+
+class OnboardingResultResponse(BaseModel):
+    """Onboarding discovery result. Returned when objective was 'onboarding'."""
+
+    themes: list[OnboardingThemeItem] = []
+    interest_points: list[str] = []
+    gaps: list[str] = []
+    summary: str = ""
+    confidence_score: Optional[float] = None
+
+
 class AnalysisResponse(BaseModel):
     """Returned from analysis endpoints — raw_response excluded to keep responses lean."""
 
@@ -59,6 +74,7 @@ class AnalysisResponse(BaseModel):
     cost_usd: Optional[float]
     insights: list[InsightResponse] = []
     positioning_result: Optional[PositioningResultResponse] = None
+    onboarding_result: Optional[OnboardingResultResponse] = None
     recommendations: Optional[RecommendationsResponse] = None
     created_at: datetime
 

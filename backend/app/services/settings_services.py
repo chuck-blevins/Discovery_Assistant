@@ -21,6 +21,7 @@ def _get_defaults() -> dict[str, str]:
         POSITIONING_SYSTEM_PROMPT,
         PERSONA_SYSTEM_PROMPT,
         ICP_SYSTEM_PROMPT,
+        ONBOARDING_SYSTEM_PROMPT,
         RECOMMENDATIONS_SYSTEM_PROMPT,
     )
     return {
@@ -28,6 +29,7 @@ def _get_defaults() -> dict[str, str]:
         "positioning": POSITIONING_SYSTEM_PROMPT,
         "persona_buildout": PERSONA_SYSTEM_PROMPT,
         "icp_refinement": ICP_SYSTEM_PROMPT,
+        "onboarding": ONBOARDING_SYSTEM_PROMPT,
         "recommendations": RECOMMENDATIONS_SYSTEM_PROMPT,
     }
 
@@ -37,6 +39,7 @@ ANALYSIS_TYPES = [
     "positioning",
     "persona_buildout",
     "icp_refinement",
+    "onboarding",
     "recommendations",
 ]
 

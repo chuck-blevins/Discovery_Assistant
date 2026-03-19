@@ -766,6 +766,133 @@ async def run_icp_analysis(
     }
 
 
+# ── Onboarding analysis ───────────────────────────────────────────────────────
+
+ONBOARDING_SYSTEM_PROMPT = """You are an expert engagement consultant reviewing notes and interviews to help a consultant understand a client's needs, priorities, and blind spots before shaping a work engagement.
+
+Analyze all provided notes and interview transcripts and return ONLY a valid JSON object (no prose before or after) with this exact structure:
+
+{
+  "themes": [
+    {"text": "<1-2 sentence description of a recurring pattern or theme>", "frequency": <int>}
+  ],
+  "interest_points": ["<specific topic or priority the client seems most focused on>", ...],
+  "gaps": ["<blind spot, unaddressed area, or concern the client hasn't mentioned>", ...],
+  "summary": "<2-3 paragraph narrative summarizing the client's overall situation, what they care about, and what the engagement should focus on>",
+  "confidence_score": <float 0.0-1.0>
+}
+
+Definitions:
+- themes: Patterns that appear repeatedly across notes/interviews. frequency = how many sources or mentions support this theme. Return 2-6 themes.
+- interest_points: Specific topics, goals, or priorities the client explicitly expressed enthusiasm or focus on. Return 2-6 items.
+- gaps: Areas the client hasn't addressed, seems unaware of, or where there's a notable absence of information that a consultant should probe. These are things the consultant may not see without an outside view. Return 2-5 gaps.
+- summary: A coherent narrative the consultant can use to orient themselves before the engagement. Cover: what the client wants, what's driving their situation, and what the consultant should pay attention to.
+- confidence_score: How complete and clear the picture is based on the available data (0.0 = very thin data, 1.0 = rich and detailed).
+
+Rules:
+- Only use evidence from the provided sources. Prefer concrete observations over speculation.
+- Gaps should be genuinely insightful — things that are conspicuously missing or underexplored.
+- Write the summary as if briefing a colleague before their first call with the client.
+"""
+
+_ONBOARDING_REQUIRED_KEYS = {"themes", "interest_points", "gaps", "summary", "confidence_score"}
+
+
+@traceable(name="runOnboardingAnalysis")
+async def run_onboarding_analysis(
+    objective: str,
+    data_sources: list[tuple[str, str]],
+    *,
+    system_prompt: str | None = None,
+    model: str | None = None,
+    api_key: str | None = None,
+    timeout: float | None = None,
+) -> dict:
+    """Run onboarding analysis — surfaces themes, interest points, gaps, and a summary.
+
+    Returns a dict with:
+    - onboarding_data: dict with themes, interest_points, gaps, summary, confidence_score
+    - tokens_used: int
+    - cost_usd: float
+    - raw_response: str
+    """
+    parts: list[str] = []
+    parts.append("## Engagement Context")
+    parts.append(f"Project objective: {objective}")
+    parts.append(f"\n## Notes and Interviews ({len(data_sources)} total):\n")
+
+    total_chars = 0
+    for filename, raw_text in data_sources:
+        if total_chars >= _MAX_TOTAL_SOURCE_CHARS:
+            parts.append("[Additional sources omitted — total source content limit reached]")
+            break
+        remaining = _MAX_TOTAL_SOURCE_CHARS - total_chars
+        content_budget = min(remaining - len(_TRUNCATION_MARKER), _MAX_CHARS_PER_SOURCE)
+        if content_budget <= 0:
+            parts.append("[Additional sources omitted — total source content limit reached]")
+            break
+        text = raw_text[:content_budget]
+        if len(raw_text) > content_budget:
+            text += _TRUNCATION_MARKER
+        parts.append(f"### Source: {filename}")
+        for i, line in enumerate(text.split("\n"), 1):
+            parts.append(f"{i}: {line}")
+        parts.append("")
+        total_chars += len(text)
+
+    prompt = "\n".join(parts)
+
+    message = await _invoke_claude(
+        system=system_prompt or ONBOARDING_SYSTEM_PROMPT,
+        user_content=prompt,
+        model=model,
+        api_key=api_key,
+        timeout=timeout,
+    )
+
+    raw_text = message.content[0].text
+    input_tokens = message.usage.input_tokens
+    output_tokens = message.usage.output_tokens
+
+    parsed = _extract_json(raw_text)
+    missing = _ONBOARDING_REQUIRED_KEYS - parsed.keys()
+    if missing:
+        raise ValueError(
+            f"Claude onboarding response missing required keys: {missing}. "
+            f"Response preview: {raw_text[:200]}"
+        )
+
+    # Normalize themes
+    themes = []
+    for t in (parsed.get("themes") or []):
+        if isinstance(t, dict):
+            themes.append({
+                "text": str(t.get("text", "")).strip() or "(no text)",
+                "frequency": int(t.get("frequency", 1)),
+            })
+        else:
+            themes.append({"text": str(t).strip(), "frequency": 1})
+
+    confidence = parsed.get("confidence_score")
+    if confidence is not None:
+        confidence = round(min(0.95, max(0.0, float(confidence))), 4)
+    else:
+        confidence = 0.0
+
+    return {
+        "onboarding_data": {
+            "themes": themes,
+            "interest_points": [str(p).strip() for p in (parsed.get("interest_points") or [])],
+            "gaps": [str(g).strip() for g in (parsed.get("gaps") or [])],
+            "summary": str(parsed.get("summary") or "").strip(),
+            "confidence_score": confidence,
+        },
+        "tokens_used": input_tokens + output_tokens,
+        "cost_usd": calculate_cost(input_tokens, output_tokens, CLAUDE_MODEL),
+        "raw_response": raw_text,
+    }
+
+
 # ── Next-step recommendations (Story 6-1) ──────────────────────────────────────
 
 RECOMMENDATIONS_SYSTEM_PROMPT = """You are an expert discovery consultant. After an analysis run, you produce actionable next-step recommendations and downloadable artifacts.

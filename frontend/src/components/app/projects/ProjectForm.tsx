@@ -22,10 +22,11 @@ import { useCreateProject, useUpdateProject } from '@/hooks/useProjects'
 import type { ProjectCreate, ProjectResponse } from '@/types/api'
 
 const OBJECTIVE_OPTIONS = [
-  { value: 'problem-validation', label: 'Problem Validation' },
-  { value: 'positioning', label: 'Positioning' },
-  { value: 'persona-buildout', label: 'Persona Build-out' },
-  { value: 'icp-refinement', label: 'ICP Refinement' },
+  { value: 'onboarding', label: 'Onboarding', description: "Discover the client's needs and shape the engagement" },
+  { value: 'problem-validation', label: 'Problem Validation', description: "Validate the client's assumed market problem" },
+  { value: 'positioning', label: 'Positioning', description: 'Surface value drivers and positioning angles' },
+  { value: 'persona-buildout', label: 'Persona Build-out', description: "Build a buyer persona from research" },
+  { value: 'icp-refinement', label: 'ICP Refinement', description: 'Refine the Ideal Customer Profile' },
 ] as const
 
 interface FormState {
@@ -181,7 +182,10 @@ export function ProjectForm({ open, onOpenChange, clientId, project }: ProjectFo
               <SelectContent>
                 {OBJECTIVE_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                    <div>
+                      <div>{opt.label}</div>
+                      <div className="text-xs text-muted-foreground">{opt.description}</div>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>

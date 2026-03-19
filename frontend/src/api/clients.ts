@@ -1,5 +1,5 @@
 import { api } from '@/lib/api'
-import type { ClientCreate, ClientResponse, ClientUpdate } from '@/types/api'
+import type { ClientCreate, ClientNoteResponse, ClientResponse, ClientUpdate } from '@/types/api'
 
 export async function listClients(includeArchived = false): Promise<ClientResponse[]> {
   const query = includeArchived ? '?include_archived=true' : ''
@@ -24,4 +24,16 @@ export async function getClient(id: string): Promise<ClientResponse> {
 
 export async function deleteClient(id: string): Promise<void> {
   return api.delete<void>(`/clients/${id}`)
+}
+
+export async function listNotes(clientId: string): Promise<ClientNoteResponse[]> {
+  return api.get<ClientNoteResponse[]>(`/clients/${clientId}/notes`)
+}
+
+export async function createNote(clientId: string, content: string): Promise<ClientNoteResponse> {
+  return api.post<ClientNoteResponse>(`/clients/${clientId}/notes`, { content })
+}
+
+export async function deleteNote(clientId: string, noteId: string): Promise<void> {
+  return api.delete<void>(`/clients/${clientId}/notes/${noteId}`)
 }

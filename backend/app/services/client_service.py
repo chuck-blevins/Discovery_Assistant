@@ -7,8 +7,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.client import Client
+from app.models.client_note import ClientNote
 from app.models.project import Project
-from app.schemas.client import ClientCreate, ClientUpdate
+from app.schemas.client import ClientCreate, ClientNoteCreate, ClientUpdate
 
 
 async def create_client(
@@ -27,6 +28,11 @@ async def create_client(
         assumed_solution=data.assumed_solution,
         assumed_market=data.assumed_market,
         initial_notes=data.initial_notes,
+        contact_name=data.contact_name,
+        contact_email=data.contact_email,
+        contact_phone=data.contact_phone,
+        website=data.website,
+        engagement_status=data.engagement_status,
         status="active",
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
@@ -92,6 +98,54 @@ async def toggle_archive(
     await db.commit()
     await db.refresh(client)
     return client
+
+
+async def create_note(
+    db: AsyncSession,
+    client_id: uuid.UUID,
+    data: ClientNoteCreate,
+) -> ClientNote:
+    """Append a timestamped note to a client."""
+    note = ClientNote(
+        id=uuid.uuid4(),
+        client_id=client_id,
+        content=data.content,
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(note)
+    await db.commit()
+    await db.refresh(note)
+    return note
+
+
+async def list_notes(
+    db: AsyncSession,
+    client_id: uuid.UUID,
+) -> list[ClientNote]:
+    """Return all notes for a client, newest first."""
+    stmt = select(ClientNote).where(ClientNote.client_id == client_id).order_by(ClientNote.created_at.desc())
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def delete_note(
+    db: AsyncSession,
+    note: ClientNote,
+) -> None:
+    """Hard-delete a single note."""
+    await db.delete(note)
+    await db.commit()
+
+
+async def get_note(
+    db: AsyncSession,
+    note_id: uuid.UUID,
+    client_id: uuid.UUID,
+) -> ClientNote | None:
+    """Return note if it belongs to the given client, else None."""
+    stmt = select(ClientNote).where(ClientNote.id == note_id, ClientNote.client_id == client_id)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def delete_client(

@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.db import get_db
 from app.models.user import User
-from app.schemas.client import ClientCreate, ClientResponse, ClientUpdate
+from app.schemas.client import ClientCreate, ClientNoteCreate, ClientNoteResponse, ClientResponse, ClientUpdate
 from app.services import audit_service, client_service
 
 router = APIRouter(prefix="/clients", tags=["clients"])
@@ -190,4 +190,67 @@ async def delete_client(
             {"name": client_name},
         )
     )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ── POST /clients/{client_id}/notes ───────────────────────────────────────────
+
+@router.post(
+    "/{client_id}/notes",
+    response_model=ClientNoteResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a note to a client",
+)
+async def create_note(
+    client_id: uuid.UUID,
+    data: ClientNoteCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ClientNoteResponse:
+    client = await client_service.get_client(db, client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+    note = await client_service.create_note(db, client_id, data)
+    return ClientNoteResponse.model_validate(note)
+
+
+# ── GET /clients/{client_id}/notes ────────────────────────────────────────────
+
+@router.get(
+    "/{client_id}/notes",
+    response_model=list[ClientNoteResponse],
+    summary="List notes for a client",
+)
+async def list_notes(
+    client_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[ClientNoteResponse]:
+    client = await client_service.get_client(db, client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+    notes = await client_service.list_notes(db, client_id)
+    return [ClientNoteResponse.model_validate(n) for n in notes]
+
+
+# ── DELETE /clients/{client_id}/notes/{note_id} ───────────────────────────────
+
+@router.delete(
+    "/{client_id}/notes/{note_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a client note",
+)
+async def delete_note(
+    client_id: uuid.UUID,
+    note_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    client = await client_service.get_client(db, client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+    note = await client_service.get_note(db, note_id, client_id)
+    if not note:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+    await client_service.delete_note(db, note)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
