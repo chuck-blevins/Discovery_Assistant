@@ -2,6 +2,7 @@ import { BASE_URL } from '@/lib/api'
 import type {
   AnalysisResponse,
   InsightResponse,
+  OnboardingSummaryResponse,
   PositioningResultResponse,
   RecommendationsResponse,
 } from '@/types/api'
@@ -21,6 +22,8 @@ export interface SSEResultEvent {
   recommendations?: RecommendationsResponse | null
   persona_updated?: boolean
   icp_updated?: boolean
+  onboarding_updated?: boolean
+  onboarding_result?: OnboardingSummaryResponse | null
   cost: { tokens: number; usd: number }
 }
 

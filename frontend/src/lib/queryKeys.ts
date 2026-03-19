@@ -22,4 +22,7 @@ export const queryKeys = {
   icp: {
     byProject: (projectId: string) => ['projects', projectId, 'icp'] as const,
   },
+  onboarding: {
+    byProject: (projectId: string) => ['projects', projectId, 'onboarding'] as const,
+  },
 }

@@ -114,6 +114,20 @@ export interface DataSourcePasteCreate {
   purpose?: string
 }
 
+// Onboarding
+export interface OnboardingThemeItem {
+  text: string
+  frequency: number
+}
+
+export interface OnboardingSummaryResponse {
+  themes: OnboardingThemeItem[]
+  interest_points: string[]
+  gaps: string[]
+  summary: string
+  confidence_score: number | null
+}
+
 // Analysis (Stories 4-1, 4-2, 4-3)
 export type InsightType = 'finding' | 'contradiction' | 'gap'
 
@@ -159,6 +173,7 @@ export interface AnalysisResponse {
   cost_usd: number | null
   insights: InsightResponse[]
   positioning_result?: PositioningResultResponse | null
+  onboarding_result?: OnboardingSummaryResponse | null
   recommendations?: RecommendationsResponse | null
   created_at: string
 }

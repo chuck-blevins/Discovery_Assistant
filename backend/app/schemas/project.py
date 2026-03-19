@@ -18,6 +18,7 @@ VALID_OBJECTIVES = [
     "positioning",
     "persona-buildout",
     "icp-refinement",
+    "onboarding",
 ]
 
 

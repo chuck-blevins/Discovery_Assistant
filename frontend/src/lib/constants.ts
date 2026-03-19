@@ -3,6 +3,7 @@ export const OBJECTIVE_LABELS: Record<string, string> = {
   'positioning': 'Positioning',
   'persona-buildout': 'Persona Build-out',
   'icp-refinement': 'ICP Refinement',
+  'onboarding': 'Onboarding',
 }
 
 /** Theme options for Appearance / theme toggle (next-themes: light | dark | system). */

@@ -17,12 +17,14 @@ import { ArtifactsSection } from '@/components/app/analysis/ArtifactsSection'
 import { AnalysisSummaryActions } from '@/components/app/analysis/AnalysisSummaryActions'
 import { buildAnalysisSummaryMarkdown } from '@/lib/analysisMarkdown'
 import { IcpCard } from '@/components/app/icp/IcpCard'
+import { OnboardingCard } from '@/components/app/onboarding/OnboardingCard'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useProject } from '@/hooks/useProjects'
 import { useDataSources } from '@/hooks/useDataSources'
 import { useAnalyses, useAnalysis, useRunAnalysisStream } from '@/hooks/useAnalyses'
 import { useIcp } from '@/hooks/useIcp'
+import { useOnboarding } from '@/hooks/useOnboarding'
 import type { SSEResultEvent } from '@/api/analyses'
 import { OBJECTIVE_LABELS } from '@/lib/constants'
 
@@ -47,6 +49,7 @@ export default function AnalysisPage() {
   const { data: selectedAnalysis } = useAnalysis(selectedAnalysisId ?? undefined)
   const { runStream } = useRunAnalysisStream(projectId)
   const { data: icp, isFetching: icpFetching, refetch: refetchIcp } = useIcp(projectId)
+  const { data: onboardingSummary, isFetching: onboardingFetching, refetch: refetchOnboarding } = useOnboarding(projectId)
   const resultsSectionRef = useRef<HTMLDivElement>(null)
   const autoStartDoneRef = useRef(false)
   const viewLatestHandledRef = useRef(false)
@@ -221,6 +224,9 @@ export default function AnalysisPage() {
             <div className="flex items-center gap-2 flex-wrap">
               <TabsList>
                 <TabsTrigger value="analysis">Analysis Summary</TabsTrigger>
+                {project?.objective === 'onboarding' && (
+                  <TabsTrigger value="onboarding">Onboarding Results</TabsTrigger>
+                )}
                 <TabsTrigger value="icp">ICP Summary</TabsTrigger>
               </TabsList>
               {project?.objective && (
@@ -252,6 +258,27 @@ export default function AnalysisPage() {
               <ArtifactsSection analysisId={displayResult.analysis_id} />
               <Button onClick={handleStartAnalysis}>Run another analysis</Button>
             </TabsContent>
+
+            {project?.objective === 'onboarding' && (
+              <TabsContent value="onboarding">
+                {(result?.onboarding_updated && !onboardingSummary && onboardingFetching) ? (
+                  <p className="text-sm text-muted-foreground">Loading onboarding results…</p>
+                ) : displayResult.onboarding_result ? (
+                  <OnboardingCard onboarding={displayResult.onboarding_result} />
+                ) : onboardingSummary ? (
+                  <OnboardingCard onboarding={onboardingSummary} />
+                ) : result?.onboarding_updated && !onboardingFetching ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">No onboarding data yet.</p>
+                    <Button variant="outline" size="sm" onClick={() => refetchOnboarding()} aria-label="Retry loading onboarding">
+                      Retry
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Run an analysis to see onboarding results.</p>
+                )}
+              </TabsContent>
+            )}
 
             <TabsContent value="icp">
               {(result?.icp_updated && !icp && icpFetching) ? (

@@ -23,6 +23,7 @@ from app.models.user import User
 from app.schemas.analysis import AnalysisResponse
 from app.utils.strength import confidence_to_strength
 from app.schemas.artifact import ArtifactSummaryResponse
+from app.schemas.analysis import OnboardingResultResponse
 from app.services import (
     analysis_service,
     artifact_service,
@@ -31,6 +32,7 @@ from app.services import (
     claude_service,
     data_source_service,
     icp_service,
+    onboarding_service,
     persona_service,
     project_service,
     settings_service,
@@ -47,6 +49,7 @@ _VALID_ANALYSIS_OBJECTIVES = frozenset({
     "positioning",
     "persona-buildout",
     "icp-refinement",
+    "onboarding",
 })
 
 # Per-project locks to prevent TOCTOU: two concurrent requests both pass cooldown then both run.
@@ -277,6 +280,48 @@ async def stream_analysis(
                                 "usd": result["cost_usd"],
                             },
                         }
+                    elif objective == "onboarding":
+                        prompt_text = await settings_service.get_prompt_text(gen_db, user_id, "onboarding")
+                        result = await claude_service.run_onboarding_analysis(
+                            objective=objective,
+                            data_sources=sources,
+                            system_prompt=prompt_text,
+                            **llm_kwargs,
+                        )
+                        odata = result["onboarding_data"]
+                        score_for_project = odata.get("confidence_score") if odata.get("confidence_score") is not None else 0.0
+                        await onboarding_service.upsert_onboarding_summary(
+                            gen_db,
+                            project_id_val,
+                            themes=odata["themes"],
+                            interest_points=odata["interest_points"],
+                            gaps=odata["gaps"],
+                            summary=odata["summary"],
+                            confidence_score=score_for_project,
+                        )
+                        analysis = await analysis_service.create_analysis(
+                            db=gen_db,
+                            project_id=project_id_val,
+                            objective=objective,
+                            confidence_score=score_for_project,
+                            raw_response=result["raw_response"],
+                            tokens_used=result["tokens_used"],
+                            cost_usd=result["cost_usd"],
+                            insights_data=[],
+                            allow_empty_insights=True,
+                        )
+                        result_payload = {
+                            "type": "result",
+                            "analysis_id": str(analysis.id),
+                            "confidence_score": score_for_project,
+                            "insights": [],
+                            "onboarding_updated": True,
+                            "onboarding_result": odata,
+                            "cost": {
+                                "tokens": result["tokens_used"],
+                                "usd": result["cost_usd"],
+                            },
+                        }
                     else:
                         prompt_text = await settings_service.get_prompt_text(gen_db, user_id, "problem_validation")
                         result = await claude_service.run_analysis(
@@ -498,6 +543,36 @@ async def run_analysis(
                     insights_data=[],
                     allow_empty_insights=True,
                 )
+            elif project.objective == "onboarding":
+                prompt_text = await settings_service.get_prompt_text(db, current_user.id, "onboarding")
+                result = await claude_service.run_onboarding_analysis(
+                    objective=project.objective,
+                    data_sources=sources,
+                    system_prompt=prompt_text,
+                    **llm_kwargs,
+                )
+                odata = result["onboarding_data"]
+                score_for_project = odata.get("confidence_score") if odata.get("confidence_score") is not None else 0.0
+                await onboarding_service.upsert_onboarding_summary(
+                    db,
+                    project_id,
+                    themes=odata["themes"],
+                    interest_points=odata["interest_points"],
+                    gaps=odata["gaps"],
+                    summary=odata["summary"],
+                    confidence_score=score_for_project,
+                )
+                analysis = await analysis_service.create_analysis(
+                    db=db,
+                    project_id=project_id,
+                    objective=project.objective,
+                    confidence_score=score_for_project,
+                    raw_response=result["raw_response"],
+                    tokens_used=result["tokens_used"],
+                    cost_usd=result["cost_usd"],
+                    insights_data=[],
+                    allow_empty_insights=True,
+                )
             else:
                 prompt_text = await settings_service.get_prompt_text(db, current_user.id, "problem_validation")
                 result = await claude_service.run_analysis(
@@ -654,3 +729,29 @@ async def list_artifacts(
     await _verify_analysis_ownership(db, analysis_id, current_user)
     artifacts = await artifact_service.list_artifacts_by_analysis(db, analysis_id)
     return [ArtifactSummaryResponse.model_validate(a) for a in artifacts]
+
+
+# ── GET /projects/{project_id}/onboarding ────────────────────────────────────
+
+
+@router.get(
+    "/projects/{project_id}/onboarding",
+    response_model=OnboardingResultResponse,
+    summary="Get the latest onboarding summary for a project",
+)
+async def get_onboarding_summary(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> OnboardingResultResponse:
+    await _verify_project_ownership(db, project_id, current_user)
+    summary = await onboarding_service.get_onboarding_summary(db, project_id)
+    if not summary:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No onboarding summary yet")
+    return OnboardingResultResponse(
+        themes=summary.themes,
+        interest_points=summary.interest_points,
+        gaps=summary.gaps,
+        summary=summary.summary,
+        confidence_score=summary.confidence_score,
+    )
