@@ -34,3 +34,16 @@ class LLMSettingsUpdate(BaseModel):
     model: Optional[str] = None
     timeout_seconds: Optional[int] = None
     api_key: Optional[str] = None
+
+
+class StripeSettingsResponse(BaseModel):
+    secret_key_masked: Optional[str]
+    secret_key_is_set: bool
+    webhook_secret_is_set: bool
+    customer_portal_url: Optional[str] = None
+
+
+class StripeSettingsUpdate(BaseModel):
+    secret_key: Optional[str] = None
+    webhook_secret: Optional[str] = None
+    customer_portal_url: Optional[str] = None

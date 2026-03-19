@@ -1,7 +1,10 @@
 """Settings routes — prompt templates and LLM configuration."""
 
+import logging
 import uuid
 from typing import Annotated
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,8 +17,11 @@ from app.schemas.settings import (
     LLMSettingsUpdate,
     PromptTemplateResponse,
     PromptUpdate,
+    StripeSettingsResponse,
+    StripeSettingsUpdate,
 )
 from app.services import settings_service
+from app.services import stripe_service
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -77,3 +83,47 @@ async def update_llm_settings(body: LLMSettingsUpdate, db: DbDep, current_user: 
         api_key_masked=settings["api_key_masked"],
         api_key_is_set=settings["api_key_is_set"],
     )
+
+
+# ── Stripe Configuration ───────────────────────────────────────────────────────
+
+@router.get("/stripe", response_model=StripeSettingsResponse)
+async def get_stripe_settings(db: DbDep, current_user: UserDep):
+    settings = await settings_service.get_stripe_settings(db, current_user.id)
+    return StripeSettingsResponse(
+        secret_key_masked=settings["secret_key_masked"],
+        secret_key_is_set=settings["secret_key_is_set"],
+        webhook_secret_is_set=settings["webhook_secret_is_set"],
+        customer_portal_url=settings["customer_portal_url"],
+    )
+
+
+@router.put("/stripe", response_model=StripeSettingsResponse)
+async def update_stripe_settings(body: StripeSettingsUpdate, db: DbDep, current_user: UserDep):
+    settings = await settings_service.update_stripe_settings(
+        db,
+        current_user.id,
+        secret_key=body.secret_key,
+        webhook_secret=body.webhook_secret,
+        customer_portal_url=body.customer_portal_url,
+    )
+    return StripeSettingsResponse(
+        secret_key_masked=settings["secret_key_masked"],
+        secret_key_is_set=settings["secret_key_is_set"],
+        webhook_secret_is_set=settings["webhook_secret_is_set"],
+        customer_portal_url=settings["customer_portal_url"],
+    )
+
+
+@router.get("/stripe/catalog", summary="List Stripe products and prices")
+async def get_stripe_catalog(db: DbDep, current_user: UserDep) -> list[dict]:
+    try:
+        result = await stripe_service.list_products_with_prices(db, current_user.id)
+        logger.info("Stripe catalog: %d products returned", len(result))
+        return result
+    except ValueError as exc:
+        logger.warning("Stripe catalog error (config): %s", exc)
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        logger.exception("Stripe catalog error: %s", exc)
+        raise HTTPException(status_code=502, detail=f"Stripe error: {exc}")

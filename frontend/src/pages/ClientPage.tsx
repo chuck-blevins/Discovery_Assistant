@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { ProjectTable } from '@/components/app/projects/ProjectTable'
+import { TimeSessionList } from '@/components/app/time/TimeSessionList'
+import { InvoiceList } from '@/components/app/invoices/InvoiceList'
 import { useClient, useClientNotes, useCreateNote, useDeleteNote } from '@/hooks/useClients'
 
 const ENGAGEMENT_LABELS: Record<string, string> = {
@@ -16,6 +18,16 @@ const ENGAGEMENT_LABELS: Record<string, string> = {
   hourly: 'Hourly',
   'short-term': 'Short-term',
   'fixed-term': 'Fixed-term',
+}
+
+const BILLING_LABELS: Record<string, string> = {
+  hourly: 'Hourly',
+  fixed_fee: 'Fixed Fee',
+  milestone: 'Milestone',
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 }
 
 function formatDate(iso: string) {
@@ -164,6 +176,43 @@ export default function ClientPage() {
               No contact info — edit the client to add details.
             </div>
           )}
+          {/* Contract terms */}
+          {client.billing_type && (
+            <div>
+              <dt className="text-muted-foreground">Billing</dt>
+              <dd className="font-medium">{BILLING_LABELS[client.billing_type] ?? client.billing_type}</dd>
+            </div>
+          )}
+          {client.contract_value != null && (
+            <div>
+              <dt className="text-muted-foreground">Contract Value</dt>
+              <dd className="font-medium">{formatCurrency(client.contract_value)}</dd>
+            </div>
+          )}
+          {client.hourly_rate != null && (
+            <div>
+              <dt className="text-muted-foreground">Hourly Rate</dt>
+              <dd className="font-medium">{formatCurrency(client.hourly_rate)}/hr</dd>
+            </div>
+          )}
+          {client.agreed_hours != null && (
+            <div>
+              <dt className="text-muted-foreground">Agreed Hours</dt>
+              <dd className="font-medium">{client.agreed_hours}h</dd>
+            </div>
+          )}
+          {client.contract_start_date && (
+            <div>
+              <dt className="text-muted-foreground">Contract Start</dt>
+              <dd className="font-medium">{formatDate(client.contract_start_date)}</dd>
+            </div>
+          )}
+          {client.contract_end_date && (
+            <div>
+              <dt className="text-muted-foreground">Contract End</dt>
+              <dd className="font-medium">{formatDate(client.contract_end_date)}</dd>
+            </div>
+          )}
         </dl>
       </div>
 
@@ -218,6 +267,10 @@ export default function ClientPage() {
           <p className="text-xs text-muted-foreground italic">No notes yet.</p>
         )}
       </div>
+
+      <TimeSessionList clientId={client.id} />
+
+      <InvoiceList clientId={client.id} />
 
       <ProjectTable clientId={client.id} clientName={client.name} />
     </>

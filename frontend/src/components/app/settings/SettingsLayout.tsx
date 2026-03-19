@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PromptsTab } from './PromptsTab'
 import { LLMConfigTab } from './LLMConfigTab'
 import { ThemeTab } from './ThemeTab'
+import { StripeConfigTab } from './StripeConfigTab'
 
 export function SettingsLayout({ isSetup = false }: { isSetup?: boolean }) {
   return (
@@ -11,6 +12,7 @@ export function SettingsLayout({ isSetup = false }: { isSetup?: boolean }) {
         <TabsList>
           <TabsTrigger value="prompts">AI Prompts</TabsTrigger>
           <TabsTrigger value="llm">LLM Configuration</TabsTrigger>
+          <TabsTrigger value="stripe">Stripe</TabsTrigger>
           <TabsTrigger value="theme">Appearance</TabsTrigger>
         </TabsList>
         <TabsContent value="prompts" className="mt-6">
@@ -18,6 +20,9 @@ export function SettingsLayout({ isSetup = false }: { isSetup?: boolean }) {
         </TabsContent>
         <TabsContent value="llm" className="mt-6">
           <LLMConfigTab isSetup={isSetup} />
+        </TabsContent>
+        <TabsContent value="stripe" className="mt-6">
+          <StripeConfigTab />
         </TabsContent>
         <TabsContent value="theme" className="mt-6">
           <ThemeTab />

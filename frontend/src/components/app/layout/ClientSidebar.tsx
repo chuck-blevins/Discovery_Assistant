@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 
 import { cn } from '@/lib/utils'
 import { useSidebarStore } from '@/stores/useSidebarStore'
 import { useClientFormStore } from '@/stores/useClientFormStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { LayoutDashboard, ChevronLeft, ChevronRight, Plus, BookOpen, SlidersHorizontal } from 'lucide-react'
+import { LayoutDashboard, ChevronLeft, ChevronRight, Plus, BookOpen, SlidersHorizontal, ExternalLink } from 'lucide-react'
+import { getStripeSettings } from '@/api/settings'
 
 export function ClientSidebar() {
   const location = useLocation()
@@ -13,7 +15,14 @@ export function ClientSidebar() {
   const openCreate = useClientFormStore((s) => s.openCreate)
   const isDashboard = location.pathname === '/'
   const isHelp = location.pathname === '/help'
-   const isSettings = location.pathname === '/settings'
+  const isSettings = location.pathname === '/settings'
+
+  const { data: stripeSettings } = useQuery({
+    queryKey: ['settings', 'stripe'],
+    queryFn: getStripeSettings,
+    staleTime: 5 * 60 * 1000,
+  })
+  const customerPortalUrl = stripeSettings?.customer_portal_url ?? null
 
   return (
     <aside
@@ -68,8 +77,37 @@ export function ClientSidebar() {
         </ul>
       </nav>
 
-     {/* Footer: settings + help + collapse toggle + new client */}
-     <div className="border-t border-zinc-800 p-2 space-y-1">
+      {/* Footer: settings + help + collapse toggle + new client */}
+      <div className="border-t border-zinc-800 p-2 space-y-1">
+        {/* Customer Portal link — only shown when configured */}
+        {customerPortalUrl && (
+          collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href={customerPortalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center w-full rounded p-2 hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400"
+                  aria-label="Customer Portal"
+                >
+                  <ExternalLink className="w-5 h-5 text-zinc-300" aria-hidden="true" />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent side="right">Customer Portal</TooltipContent>
+            </Tooltip>
+          ) : (
+            <a
+              href={customerPortalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center w-full rounded px-3 py-2 text-sm hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-zinc-400"
+            >
+              <ExternalLink className="w-4 h-4 mr-3 text-zinc-300 shrink-0" aria-hidden="true" />
+              <span className="text-zinc-200">Customer Portal</span>
+            </a>
+          )
+        )}
         {/* Settings link */}
         {collapsed ? (
           <Tooltip>

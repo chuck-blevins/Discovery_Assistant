@@ -74,6 +74,10 @@ from app.api.routes.data_sources import router as data_sources_router
 from app.api.routes.analyses import router as analyses_router
 from app.api.routes.artifacts import router as artifacts_router
 from app.api.routes.settings import router as settings_router
+from app.api.routes.time_sessions import router as time_sessions_router
+from app.api.routes.invoices import router as invoices_router
+from app.api.routes.webhooks import router as webhooks_router
+from app.api.routes.dashboard import router as dashboard_router
 from app.schemas.auth import HealthResponse
 from app.services import storage_service
 
@@ -152,6 +156,10 @@ app.include_router(data_sources_router)
 app.include_router(analyses_router)
 app.include_router(artifacts_router)
 app.include_router(settings_router)
+app.include_router(time_sessions_router)
+app.include_router(invoices_router)
+app.include_router(webhooks_router)
+app.include_router(dashboard_router)
 
 # ============================================================================
 # ROOT ENDPOINT
