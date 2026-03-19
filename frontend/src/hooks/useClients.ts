@@ -3,9 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   archiveClient,
   createClient,
+  createNote,
   deleteClient,
+  deleteNote,
   getClient,
   listClients,
+  listNotes,
   updateClient,
 } from '@/api/clients'
 import { queryKeys } from '@/lib/queryKeys'
@@ -55,5 +58,29 @@ export function useDeleteClient() {
   return useMutation({
     mutationFn: (id: string) => deleteClient(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.clients.all }),
+  })
+}
+
+export function useClientNotes(clientId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.clients.notes(clientId ?? ''),
+    queryFn: () => listNotes(clientId!),
+    enabled: Boolean(clientId),
+  })
+}
+
+export function useCreateNote(clientId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (content: string) => createNote(clientId, content),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.clients.notes(clientId) }),
+  })
+}
+
+export function useDeleteNote(clientId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (noteId: string) => deleteNote(clientId, noteId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.clients.notes(clientId) }),
   })
 }

@@ -20,9 +20,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCreateClient, useUpdateClient } from '@/hooks/useClients'
-import type { ClientResponse } from '@/types/api'
+import type { ClientResponse, EngagementStatus } from '@/types/api'
 
 const MARKET_TYPE_OPTIONS = ['Enterprise', 'SMB', 'SaaS', 'Consumer', 'Marketplace', 'Other']
+const ENGAGEMENT_STATUS_OPTIONS: { value: EngagementStatus; label: string }[] = [
+  { value: 'lead', label: 'Lead' },
+  { value: 'coaching', label: 'Coaching' },
+  { value: 'hourly', label: 'Hourly' },
+  { value: 'short-term', label: 'Short-term' },
+  { value: 'fixed-term', label: 'Fixed-term' },
+]
 
 interface ClientFormProps {
   open: boolean
@@ -34,9 +41,23 @@ interface FormState {
   name: string
   description: string
   market_type: string
+  contact_name: string
+  contact_email: string
+  contact_phone: string
+  website: string
+  engagement_status: string
 }
 
-const emptyForm: FormState = { name: '', description: '', market_type: '' }
+const emptyForm: FormState = {
+  name: '',
+  description: '',
+  market_type: '',
+  contact_name: '',
+  contact_email: '',
+  contact_phone: '',
+  website: '',
+  engagement_status: '',
+}
 
 export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
   const navigate = useNavigate()
@@ -48,12 +69,20 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
   const updateMutation = useUpdateClient()
   const isPending = createMutation.isPending || updateMutation.isPending
 
-  // Sync form state when client prop changes or dialog opens
   useEffect(() => {
     if (open) {
       setForm(
         client
-          ? { name: client.name, description: client.description ?? '', market_type: client.market_type ?? '' }
+          ? {
+              name: client.name,
+              description: client.description ?? '',
+              market_type: client.market_type ?? '',
+              contact_name: client.contact_name ?? '',
+              contact_email: client.contact_email ?? '',
+              contact_phone: client.contact_phone ?? '',
+              website: client.website ?? '',
+              engagement_status: client.engagement_status ?? '',
+            }
           : emptyForm
       )
       setNameError(null)
@@ -83,6 +112,11 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
       name: form.name.trim(),
       ...(form.description.trim() ? { description: form.description.trim() } : {}),
       ...(form.market_type ? { market_type: form.market_type } : {}),
+      ...(form.contact_name.trim() ? { contact_name: form.contact_name.trim() } : {}),
+      ...(form.contact_email.trim() ? { contact_email: form.contact_email.trim() } : {}),
+      ...(form.contact_phone.trim() ? { contact_phone: form.contact_phone.trim() } : {}),
+      ...(form.website.trim() ? { website: form.website.trim() } : {}),
+      ...(form.engagement_status ? { engagement_status: form.engagement_status as EngagementStatus } : {}),
     }
 
     try {
@@ -102,7 +136,7 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent aria-describedby={undefined}>
+      <DialogContent aria-describedby={undefined} className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit Client' : 'New Client'}</DialogTitle>
         </DialogHeader>
@@ -128,6 +162,77 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
                   {nameError}
                 </p>
               )}
+            </div>
+
+            {/* Contact Name */}
+            <div className="space-y-1">
+              <Label htmlFor="client-contact-name">Contact Name</Label>
+              <Input
+                id="client-contact-name"
+                value={form.contact_name}
+                onChange={(e) => setForm((f) => ({ ...f, contact_name: e.target.value }))}
+                placeholder="Jane Smith"
+                disabled={isPending}
+              />
+            </div>
+
+            {/* Contact Email */}
+            <div className="space-y-1">
+              <Label htmlFor="client-contact-email">Contact Email</Label>
+              <Input
+                id="client-contact-email"
+                type="email"
+                value={form.contact_email}
+                onChange={(e) => setForm((f) => ({ ...f, contact_email: e.target.value }))}
+                placeholder="jane@acme.com"
+                disabled={isPending}
+              />
+            </div>
+
+            {/* Contact Phone */}
+            <div className="space-y-1">
+              <Label htmlFor="client-contact-phone">Contact Phone</Label>
+              <Input
+                id="client-contact-phone"
+                type="tel"
+                value={form.contact_phone}
+                onChange={(e) => setForm((f) => ({ ...f, contact_phone: e.target.value }))}
+                placeholder="+1 (555) 000-0000"
+                disabled={isPending}
+              />
+            </div>
+
+            {/* Website */}
+            <div className="space-y-1">
+              <Label htmlFor="client-website">Company Website</Label>
+              <Input
+                id="client-website"
+                value={form.website}
+                onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+                placeholder="https://acme.com"
+                disabled={isPending}
+              />
+            </div>
+
+            {/* Engagement Status */}
+            <div className="space-y-1">
+              <Label htmlFor="client-engagement-status">Engagement Status</Label>
+              <Select
+                value={form.engagement_status}
+                onValueChange={(v) => setForm((f) => ({ ...f, engagement_status: v }))}
+                disabled={isPending}
+              >
+                <SelectTrigger id="client-engagement-status">
+                  <SelectValue placeholder="Select…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ENGAGEMENT_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Description */}

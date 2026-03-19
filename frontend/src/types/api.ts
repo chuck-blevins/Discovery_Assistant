@@ -4,6 +4,8 @@ export interface UserResponse {
   created_at: string
 }
 
+export type EngagementStatus = 'lead' | 'coaching' | 'short-term' | 'fixed-term' | 'hourly'
+
 export interface ClientResponse {
   id: string
   user_id: string
@@ -14,6 +16,11 @@ export interface ClientResponse {
   assumed_solution: string | null
   assumed_market: string | null
   initial_notes: string | null
+  contact_name: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  website: string | null
+  engagement_status: EngagementStatus | null
   status: 'active' | 'archived'
   created_at: string
   updated_at: string
@@ -28,6 +35,18 @@ export interface ClientCreate {
   assumed_solution?: string
   assumed_market?: string
   initial_notes?: string
+  contact_name?: string
+  contact_email?: string
+  contact_phone?: string
+  website?: string
+  engagement_status?: EngagementStatus
+}
+
+export interface ClientNoteResponse {
+  id: string
+  client_id: string
+  content: string
+  created_at: string
 }
 
 export type ClientUpdate = Partial<ClientCreate>

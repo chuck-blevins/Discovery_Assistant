@@ -11,5 +11,6 @@ from app.models.icp import Icp
 from app.models.artifact import Artifact
 from app.models.prompt_template import PromptTemplate
 from app.models.app_settings import AppSettings
+from app.models.client_note import ClientNote
 
-__all__ = ["User", "Client", "AuditLog", "Project", "DataSource", "Analysis", "Insight", "Persona", "Icp", "Artifact", "PromptTemplate", "AppSettings"]
+__all__ = ["User", "Client", "AuditLog", "Project", "DataSource", "Analysis", "Insight", "Persona", "Icp", "Artifact", "PromptTemplate", "AppSettings", "ClientNote"]
