@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,8 @@ import { ProjectTable } from '@/components/app/projects/ProjectTable'
 import { TimeSessionList } from '@/components/app/time/TimeSessionList'
 import { InvoiceList } from '@/components/app/invoices/InvoiceList'
 import { useClient, useClientNotes, useCreateNote, useDeleteNote } from '@/hooks/useClients'
+import { ClientForm } from '@/components/app/clients/ClientForm'
+import { useClientFormStore } from '@/stores/useClientFormStore'
 
 const ENGAGEMENT_LABELS: Record<string, string> = {
   lead: 'Lead',
@@ -95,6 +97,7 @@ export default function ClientPage() {
   }
 
   const hasContactInfo = client.contact_name || client.contact_email || client.contact_phone || client.website
+  const { open: formOpen, client: editingClient, openEdit, close: closeForm } = useClientFormStore()
 
   return (
     <>
@@ -121,7 +124,13 @@ export default function ClientPage() {
 
       {/* Client Info Card */}
       <div className="mb-6 rounded-lg border bg-card p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Client Info</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Client Info</h2>
+          <Button variant="ghost" size="sm" onClick={() => openEdit(client)} className="h-7 px-2 gap-1 text-xs">
+            <Pencil className="h-3 w-3" />
+            Edit
+          </Button>
+        </div>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
           <div>
             <dt className="text-muted-foreground">Date Added</dt>
@@ -273,6 +282,12 @@ export default function ClientPage() {
       <InvoiceList clientId={client.id} />
 
       <ProjectTable clientId={client.id} clientName={client.name} />
+
+      <ClientForm
+        open={formOpen}
+        onOpenChange={(v) => { if (!v) closeForm() }}
+        client={editingClient ?? undefined}
+      />
     </>
   )
 }

@@ -7,6 +7,21 @@ import type { ClientResponse } from '@/types/api'
 
 vi.mock('@/hooks/useClients', () => ({
   useClient: vi.fn(),
+  useClientNotes: vi.fn().mockReturnValue({ data: [] }),
+  useCreateNote: vi.fn().mockReturnValue({ mutateAsync: vi.fn() }),
+  useDeleteNote: vi.fn().mockReturnValue({ mutateAsync: vi.fn() }),
+}))
+
+vi.mock('@/components/app/clients/ClientForm', () => ({
+  ClientForm: () => null,
+}))
+
+vi.mock('@/components/app/time/TimeSessionList', () => ({
+  TimeSessionList: () => null,
+}))
+
+vi.mock('@/components/app/invoices/InvoiceList', () => ({
+  InvoiceList: () => null,
 }))
 
 let capturedProjectTableProps: { clientId?: string; clientName?: string } = {}
@@ -43,7 +58,19 @@ const mockClient: ClientResponse = {
   assumed_solution: null,
   assumed_market: null,
   initial_notes: null,
+  contact_name: null,
+  contact_email: null,
+  contact_phone: null,
+  website: null,
+  engagement_status: null,
   status: 'active',
+  contract_value: null,
+  billing_type: null,
+  hourly_rate: null,
+  agreed_hours: null,
+  contract_start_date: null,
+  contract_end_date: null,
+  stripe_customer_id: null,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-15T00:00:00Z',
   archived_at: null,

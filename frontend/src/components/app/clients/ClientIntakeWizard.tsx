@@ -30,6 +30,11 @@ import { intakeScope } from '@/api/clients'
 import { createClient } from '@/api/clients'
 import { createProject } from '@/api/projects'
 import type { IntakeScopeResponse } from '@/api/clients'
+import type { EngagementStatus } from '@/types/api'
+
+const VALID_ENGAGEMENT_STATUSES = new Set<EngagementStatus>([
+  'lead', 'coaching', 'short-term', 'fixed-term', 'hourly',
+])
 
 interface ClientIntakeWizardProps {
   open: boolean
@@ -46,6 +51,10 @@ export function ClientIntakeWizard({ open, onClose }: ClientIntakeWizardProps) {
   const [name, setName] = useState('')
   const [context, setContext] = useState('')
   const [winDefinition, setWinDefinition] = useState('')
+  const [contactName, setContactName] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+  const [contactPhone, setContactPhone] = useState('')
+  const [website, setWebsite] = useState('')
 
   // Wizard state
   const [step, setStep] = useState<Step>(1)
@@ -67,6 +76,10 @@ export function ClientIntakeWizard({ open, onClose }: ClientIntakeWizardProps) {
     setName('')
     setContext('')
     setWinDefinition('')
+    setContactName('')
+    setContactEmail('')
+    setContactPhone('')
+    setWebsite('')
     setStep(1)
     setIsGenerating(false)
     setGenerateError(null)
@@ -120,11 +133,6 @@ export function ClientIntakeWizard({ open, onClose }: ClientIntakeWizardProps) {
     setStep(3)
   }
 
-  function handleContinueWithoutDraft() {
-    setAiDraft(null)
-    setStep(3)
-  }
-
   async function handleConfirm() {
     setIsConfirming(true)
     setConfirmError(null)
@@ -137,7 +145,13 @@ export function ClientIntakeWizard({ open, onClose }: ClientIntakeWizardProps) {
           name,
           description: engagementSummary || undefined,
           initial_notes: winDefinition || undefined,
-          engagement_status: suggestedType || undefined,
+          engagement_status: VALID_ENGAGEMENT_STATUSES.has(suggestedType as EngagementStatus)
+            ? (suggestedType as EngagementStatus)
+            : undefined,
+          contact_name: contactName.trim() || undefined,
+          contact_email: contactEmail.trim() || undefined,
+          contact_phone: contactPhone.trim() || undefined,
+          website: website.trim() || undefined,
         })
         clientId = client.id
         setCreatedClientId(clientId)
@@ -214,6 +228,51 @@ export function ClientIntakeWizard({ open, onClose }: ClientIntakeWizardProps) {
                 onChange={(e) => setWinDefinition(e.target.value)}
                 placeholder="Clear ICP and messaging for enterprise sales motion"
               />
+            </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contact Info (optional)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="intake-contact-name">Contact name</Label>
+                  <Input
+                    id="intake-contact-name"
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="Jane Smith"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="intake-contact-email">Contact email</Label>
+                  <Input
+                    id="intake-contact-email"
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="jane@acme.com"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="intake-contact-phone">Phone</Label>
+                  <Input
+                    id="intake-contact-phone"
+                    type="tel"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder="+1 555 000 0000"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="intake-website">Website</Label>
+                  <Input
+                    id="intake-website"
+                    type="url"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    placeholder="https://acme.com"
+                  />
+                </div>
+              </div>
             </div>
 
             {generateError && (
