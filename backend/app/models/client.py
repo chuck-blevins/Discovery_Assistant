@@ -1,9 +1,9 @@
 """Client ORM model — maps to the clients table."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, String, Text
+from sqlalchemy import Date, DateTime, Float, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -30,6 +30,14 @@ class Client(Base):
     website: Mapped[str | None] = mapped_column(Text(), nullable=True)
     engagement_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    # CRM Phase 1: contract terms
+    contract_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    billing_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    hourly_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    agreed_hours: Mapped[float | None] = mapped_column(Float, nullable=True)
+    contract_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    contract_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.now, nullable=False
     )

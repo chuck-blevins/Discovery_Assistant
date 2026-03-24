@@ -172,3 +172,45 @@ async def update_llm_settings(
     if api_key:
         await _upsert_setting(db, user_id, "claude_api_key", api_key)
     return await get_llm_settings(db, user_id)
+
+
+# ── Stripe settings ───────────────────────────────────────────────────────────
+
+async def get_stripe_secret_key(db: AsyncSession, user_id: uuid.UUID) -> Optional[str]:
+    """Return the user's Stripe secret key, or None if not configured."""
+    return await _get_setting(db, user_id, "stripe_secret_key")
+
+
+async def get_stripe_webhook_secret(db: AsyncSession, user_id: uuid.UUID) -> Optional[str]:
+    """Return the user's Stripe webhook signing secret, or None if not configured."""
+    return await _get_setting(db, user_id, "stripe_webhook_secret")
+
+
+async def get_stripe_settings(db: AsyncSession, user_id: uuid.UUID) -> dict:
+    secret_key = await _get_setting(db, user_id, "stripe_secret_key")
+    webhook_secret = await _get_setting(db, user_id, "stripe_webhook_secret")
+    customer_portal_url = await _get_setting(db, user_id, "stripe_customer_portal_url")
+    return {
+        "secret_key_masked": _mask_api_key(secret_key) if secret_key else None,
+        "secret_key_is_set": bool(secret_key),
+        "webhook_secret_is_set": bool(webhook_secret),
+        "customer_portal_url": customer_portal_url,
+        "_raw_secret_key": secret_key,
+    }
+
+
+async def update_stripe_settings(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    *,
+    secret_key: Optional[str] = None,
+    webhook_secret: Optional[str] = None,
+    customer_portal_url: Optional[str] = None,
+) -> dict:
+    if secret_key:
+        await _upsert_setting(db, user_id, "stripe_secret_key", secret_key)
+    if webhook_secret:
+        await _upsert_setting(db, user_id, "stripe_webhook_secret", webhook_secret)
+    if customer_portal_url is not None:
+        await _upsert_setting(db, user_id, "stripe_customer_portal_url", customer_portal_url)
+    return await get_stripe_settings(db, user_id)

@@ -13,5 +13,8 @@ from app.models.prompt_template import PromptTemplate
 from app.models.app_settings import AppSettings
 from app.models.client_note import ClientNote
 from app.models.onboarding_summary import OnboardingSummary
+from app.models.time_session import TimeSession
+from app.models.invoice import Invoice
+from app.models.invoice_line_item import InvoiceLineItem
 
-__all__ = ["User", "Client", "AuditLog", "Project", "DataSource", "Analysis", "Insight", "Persona", "Icp", "Artifact", "PromptTemplate", "AppSettings", "ClientNote", "OnboardingSummary"]
+__all__ = ["User", "Client", "AuditLog", "Project", "DataSource", "Analysis", "Insight", "Persona", "Icp", "Artifact", "PromptTemplate", "AppSettings", "ClientNote", "OnboardingSummary", "TimeSession", "Invoice", "InvoiceLineItem"]

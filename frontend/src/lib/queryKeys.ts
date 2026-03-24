@@ -25,4 +25,14 @@ export const queryKeys = {
   onboarding: {
     byProject: (projectId: string) => ['projects', projectId, 'onboarding'] as const,
   },
+  timeSessions: {
+    byClient: (clientId: string) => ['clients', clientId, 'sessions'] as const,
+  },
+  invoices: {
+    byClient: (clientId: string) => ['clients', clientId, 'invoices'] as const,
+    detail: (id: string) => ['invoices', id] as const,
+  },
+  dashboard: {
+    revenue: ['dashboard', 'revenue'] as const,
+  },
 }

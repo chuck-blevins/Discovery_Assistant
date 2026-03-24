@@ -4,6 +4,8 @@ import type {
   LLMSettingsUpdate,
   PromptTemplateResponse,
   PromptUpdate,
+  StripeSettingsResponse,
+  StripeSettingsUpdate,
 } from '@/types/api'
 
 export async function getPrompts(): Promise<PromptTemplateResponse[]> {
@@ -27,4 +29,29 @@ export async function getLLMSettings(): Promise<LLMSettingsResponse> {
 
 export async function updateLLMSettings(data: LLMSettingsUpdate): Promise<LLMSettingsResponse> {
   return api.put<LLMSettingsResponse>('/settings/llm', data)
+}
+
+export async function getStripeSettings(): Promise<StripeSettingsResponse> {
+  return api.get<StripeSettingsResponse>('/settings/stripe')
+}
+
+export async function updateStripeSettings(data: StripeSettingsUpdate): Promise<StripeSettingsResponse> {
+  return api.put<StripeSettingsResponse>('/settings/stripe', data)
+}
+
+export interface StripePrice {
+  id: string
+  unit_amount: number | null
+  currency: string
+  nickname: string | null
+}
+
+export interface StripeProduct {
+  id: string
+  name: string
+  prices: StripePrice[]
+}
+
+export async function getStripeCatalog(): Promise<StripeProduct[]> {
+  return api.get<StripeProduct[]>('/settings/stripe/catalog')
 }

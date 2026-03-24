@@ -6,6 +6,8 @@ export interface UserResponse {
 
 export type EngagementStatus = 'lead' | 'coaching' | 'short-term' | 'fixed-term' | 'hourly'
 
+export type BillingType = 'hourly' | 'fixed_fee' | 'milestone'
+
 export interface ClientResponse {
   id: string
   user_id: string
@@ -22,6 +24,13 @@ export interface ClientResponse {
   website: string | null
   engagement_status: EngagementStatus | null
   status: 'active' | 'archived'
+  contract_value: number | null
+  billing_type: BillingType | null
+  hourly_rate: number | null
+  agreed_hours: number | null
+  contract_start_date: string | null
+  contract_end_date: string | null
+  stripe_customer_id: string | null
   created_at: string
   updated_at: string
   archived_at: string | null
@@ -40,6 +49,12 @@ export interface ClientCreate {
   contact_phone?: string
   website?: string
   engagement_status?: EngagementStatus
+  contract_value?: number
+  billing_type?: BillingType
+  hourly_rate?: number
+  agreed_hours?: number
+  contract_start_date?: string
+  contract_end_date?: string
 }
 
 export interface ClientNoteResponse {
@@ -278,4 +293,96 @@ export interface LLMSettingsUpdate {
   model?: string
   timeout_seconds?: number
   api_key?: string
+}
+
+export interface StripeSettingsResponse {
+  secret_key_masked: string | null
+  secret_key_is_set: boolean
+  webhook_secret_is_set: boolean
+  customer_portal_url: string | null
+}
+
+export interface StripeSettingsUpdate {
+  secret_key?: string
+  webhook_secret?: string
+  customer_portal_url?: string
+}
+
+export interface TimeSessionResponse {
+  id: string
+  client_id: string
+  project_id: string | null
+  user_id: string
+  session_date: string
+  hours: number
+  description: string | null
+  created_at: string
+}
+
+export interface TimeSessionCreate {
+  session_date: string
+  hours: number
+  description?: string
+  project_id?: string
+}
+
+export interface InvoiceLineItemResponse {
+  id: string
+  invoice_id: string
+  description: string
+  quantity: number
+  unit_price_usd: number
+  amount_usd: number
+  time_session_id: string | null
+  created_at: string
+}
+
+export interface InvoiceLineItemCreate {
+  description: string
+  quantity?: number
+  unit_price_usd: number
+  time_session_id?: string
+}
+
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void' | 'overdue'
+
+export interface InvoiceResponse {
+  id: string
+  client_id: string
+  user_id: string
+  stripe_invoice_id: string | null
+  stripe_invoice_url: string | null
+  status: InvoiceStatus
+  due_date: string | null
+  paid_at: string | null
+  subtotal_usd: number
+  notes: string | null
+  line_items: InvoiceLineItemResponse[]
+  created_at: string
+  updated_at: string
+}
+
+export interface InvoiceCreate {
+  due_date?: string
+  notes?: string
+  line_items: InvoiceLineItemCreate[]
+}
+
+export interface RevenueDashboard {
+  pipeline: number
+  contracted: number
+  outstanding: number
+  outstanding_aging: {
+    '0_30_days': number
+    '31_60_days': number
+    '60_plus_days': number
+  }
+  collected_month: number
+  collected_ytd: number
+  renewal_alerts: {
+    client_id: string
+    client_name: string
+    contract_end_date: string
+    days_remaining: number
+  }[]
 }
