@@ -1,7 +1,7 @@
 """Pydantic schemas for client request/response models."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -20,6 +20,12 @@ class ClientCreate(BaseModel):
     contact_phone: Optional[str] = None
     website: Optional[str] = None
     engagement_status: Optional[str] = None
+    contract_value: Optional[float] = None
+    billing_type: Optional[str] = None
+    hourly_rate: Optional[float] = None
+    agreed_hours: Optional[float] = None
+    contract_start_date: Optional[date] = None
+    contract_end_date: Optional[date] = None
 
     @field_validator("name")
     @classmethod
@@ -42,6 +48,12 @@ class ClientUpdate(BaseModel):
     contact_phone: Optional[str] = None
     website: Optional[str] = None
     engagement_status: Optional[str] = None
+    contract_value: Optional[float] = None
+    billing_type: Optional[str] = None
+    hourly_rate: Optional[float] = None
+    agreed_hours: Optional[float] = None
+    contract_start_date: Optional[date] = None
+    contract_end_date: Optional[date] = None
 
     @field_validator("name")
     @classmethod
@@ -89,6 +101,13 @@ class ClientResponse(BaseModel):
     website: Optional[str] = None
     engagement_status: Optional[str] = None
     status: str
+    contract_value: Optional[float] = None
+    billing_type: Optional[str] = None
+    hourly_rate: Optional[float] = None
+    agreed_hours: Optional[float] = None
+    contract_start_date: Optional[date] = None
+    contract_end_date: Optional[date] = None
+    stripe_customer_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     archived_at: Optional[datetime] = None

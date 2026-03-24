@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCreateClient, useUpdateClient } from '@/hooks/useClients'
-import type { ClientResponse, EngagementStatus } from '@/types/api'
+import type { BillingType, ClientResponse, EngagementStatus } from '@/types/api'
 
 const MARKET_TYPE_OPTIONS = ['Enterprise', 'SMB', 'SaaS', 'Consumer', 'Marketplace', 'Other']
 const ENGAGEMENT_STATUS_OPTIONS: { value: EngagementStatus; label: string }[] = [
@@ -29,6 +29,11 @@ const ENGAGEMENT_STATUS_OPTIONS: { value: EngagementStatus; label: string }[] = 
   { value: 'hourly', label: 'Hourly' },
   { value: 'short-term', label: 'Short-term' },
   { value: 'fixed-term', label: 'Fixed-term' },
+]
+const BILLING_TYPE_OPTIONS: { value: BillingType; label: string }[] = [
+  { value: 'hourly', label: 'Hourly' },
+  { value: 'fixed_fee', label: 'Fixed Fee' },
+  { value: 'milestone', label: 'Milestone' },
 ]
 
 interface ClientFormProps {
@@ -46,6 +51,12 @@ interface FormState {
   contact_phone: string
   website: string
   engagement_status: string
+  billing_type: string
+  contract_value: string
+  hourly_rate: string
+  agreed_hours: string
+  contract_start_date: string
+  contract_end_date: string
 }
 
 const emptyForm: FormState = {
@@ -57,6 +68,12 @@ const emptyForm: FormState = {
   contact_phone: '',
   website: '',
   engagement_status: '',
+  billing_type: '',
+  contract_value: '',
+  hourly_rate: '',
+  agreed_hours: '',
+  contract_start_date: '',
+  contract_end_date: '',
 }
 
 export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
@@ -82,6 +99,12 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
               contact_phone: client.contact_phone ?? '',
               website: client.website ?? '',
               engagement_status: client.engagement_status ?? '',
+              billing_type: client.billing_type ?? '',
+              contract_value: client.contract_value != null ? String(client.contract_value) : '',
+              hourly_rate: client.hourly_rate != null ? String(client.hourly_rate) : '',
+              agreed_hours: client.agreed_hours != null ? String(client.agreed_hours) : '',
+              contract_start_date: client.contract_start_date ?? '',
+              contract_end_date: client.contract_end_date ?? '',
             }
           : emptyForm
       )
@@ -117,6 +140,12 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
       ...(form.contact_phone.trim() ? { contact_phone: form.contact_phone.trim() } : {}),
       ...(form.website.trim() ? { website: form.website.trim() } : {}),
       ...(form.engagement_status ? { engagement_status: form.engagement_status as EngagementStatus } : {}),
+      ...(form.billing_type ? { billing_type: form.billing_type as BillingType } : {}),
+      ...(form.contract_value ? { contract_value: parseFloat(form.contract_value) } : {}),
+      ...(form.hourly_rate ? { hourly_rate: parseFloat(form.hourly_rate) } : {}),
+      ...(form.agreed_hours ? { agreed_hours: parseFloat(form.agreed_hours) } : {}),
+      ...(form.contract_start_date ? { contract_start_date: form.contract_start_date } : {}),
+      ...(form.contract_end_date ? { contract_end_date: form.contract_end_date } : {}),
     }
 
     try {
@@ -233,6 +262,104 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Contract section */}
+            <div className="pt-2 border-t">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Contract Terms</p>
+              <div className="space-y-3">
+                {/* Billing Type */}
+                <div className="space-y-1">
+                  <Label htmlFor="client-billing-type">Billing Type</Label>
+                  <Select
+                    value={form.billing_type}
+                    onValueChange={(v) => setForm((f) => ({ ...f, billing_type: v }))}
+                    disabled={isPending}
+                  >
+                    <SelectTrigger id="client-billing-type">
+                      <SelectValue placeholder="Select…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BILLING_TYPE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Contract Value */}
+                <div className="space-y-1">
+                  <Label htmlFor="client-contract-value">Contract Value ($)</Label>
+                  <Input
+                    id="client-contract-value"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.contract_value}
+                    onChange={(e) => setForm((f) => ({ ...f, contract_value: e.target.value }))}
+                    placeholder="0.00"
+                    disabled={isPending}
+                  />
+                </div>
+
+                {/* Hourly Rate & Agreed Hours (only for hourly billing) */}
+                {form.billing_type === 'hourly' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="client-hourly-rate">Hourly Rate ($)</Label>
+                      <Input
+                        id="client-hourly-rate"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.hourly_rate}
+                        onChange={(e) => setForm((f) => ({ ...f, hourly_rate: e.target.value }))}
+                        placeholder="0.00"
+                        disabled={isPending}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="client-agreed-hours">Agreed Hours</Label>
+                      <Input
+                        id="client-agreed-hours"
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={form.agreed_hours}
+                        onChange={(e) => setForm((f) => ({ ...f, agreed_hours: e.target.value }))}
+                        placeholder="0"
+                        disabled={isPending}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Contract Dates */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="client-start-date">Start Date</Label>
+                    <Input
+                      id="client-start-date"
+                      type="date"
+                      value={form.contract_start_date}
+                      onChange={(e) => setForm((f) => ({ ...f, contract_start_date: e.target.value }))}
+                      disabled={isPending}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="client-end-date">End Date</Label>
+                    <Input
+                      id="client-end-date"
+                      type="date"
+                      value={form.contract_end_date}
+                      onChange={(e) => setForm((f) => ({ ...f, contract_end_date: e.target.value }))}
+                      disabled={isPending}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Description */}

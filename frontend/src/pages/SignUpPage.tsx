@@ -47,15 +47,15 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 text-gray-900">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-md p-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Create account</h1>
-        <p className="text-gray-500 mb-6">Start your Discovery App journey</p>
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 text-foreground">
+      <div className="w-full max-w-md bg-card text-card-foreground rounded-xl shadow-md p-8">
+        <h1 className="text-2xl font-bold mb-2">Create account</h1>
+        <p className="text-muted-foreground mb-6">Start your Discovery App journey</p>
 
         {error && (
           <div
             role="alert"
-            className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
+            className="mb-4 rounded-md bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive"
           >
             {error}
           </div>
@@ -63,7 +63,7 @@ export default function SignUpPage() {
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
               Email
             </label>
             <input
@@ -73,13 +73,13 @@ export default function SignUpPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full min-h-[44px] rounded-md border border-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground bg-background shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="you@example.com"
             />
           </div>
 
           <div className="mb-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
               Password
             </label>
             <input
@@ -89,7 +89,7 @@ export default function SignUpPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full min-h-[44px] rounded-md border border-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground bg-background shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="••••••••"
             />
           </div>
@@ -107,7 +107,7 @@ export default function SignUpPage() {
           )}
 
           <div className="mb-6">
-            <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="confirm" className="block text-sm font-medium text-foreground mb-1">
               Confirm password
             </label>
             <input
@@ -117,30 +117,30 @@ export default function SignUpPage() {
               required
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className={`w-full rounded-md border px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full min-h-[44px] rounded-md border px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground bg-background shadow-sm focus:outline-none focus:ring-2 focus:ring-ring ${
                 confirm.length > 0 && !passwordsMatch
-                  ? 'border-red-400'
-                  : 'border-gray-300'
+                  ? 'border-destructive'
+                  : 'border-input'
               }`}
               placeholder="••••••••"
             />
             {confirm.length > 0 && !passwordsMatch && (
-              <p className="mt-1 text-xs text-red-500">Passwords do not match</p>
+              <p className="mt-1 text-xs text-destructive">Passwords do not match</p>
             )}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full min-h-[44px] rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:underline">
+          <Link to="/login" className="font-medium text-primary hover:underline inline-block py-1 px-1">
             Sign in
           </Link>
         </p>

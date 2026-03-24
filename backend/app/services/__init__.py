@@ -9,9 +9,12 @@ from . import (
     data_source_service,
     file_parser,
     icp_service,
+    invoice_service,
     persona_service,
     project_service,
     storage_service,
+    stripe_service,
+    time_session_service,
 )
 from . import settings_services as settings_service
 
@@ -24,8 +27,11 @@ __all__ = [
     "data_source_service",
     "file_parser",
     "icp_service",
+    "invoice_service",
     "persona_service",
     "project_service",
     "settings_service",
     "storage_service",
+    "stripe_service",
+    "time_session_service",
 ]
