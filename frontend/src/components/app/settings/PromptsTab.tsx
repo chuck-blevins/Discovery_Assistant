@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { getPrompts, updatePrompt, resetPrompt } from '@/api/settings'
+import { getPrompts, updatePrompt, resetPrompt, getAnalysisTypes } from '@/api/settings'
 import {
   Select,
   SelectContent,
@@ -10,23 +10,22 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-const ANALYSIS_TYPES = [
-  { value: 'problem_validation', label: 'Problem Validation' },
-  { value: 'positioning', label: 'Positioning' },
-  { value: 'persona_buildout', label: 'Persona Build-out' },
-  { value: 'icp_refinement', label: 'ICP Refinement' },
-  { value: 'recommendations', label: 'Recommendations' },
-]
-
 export function PromptsTab() {
   const qc = useQueryClient()
   const [selectedType, setSelectedType] = useState('problem_validation')
   const [editedPrompt, setEditedPrompt] = useState<string | null>(null)
 
-  const { data: prompts, isLoading } = useQuery({
+  const { data: analysisTypes, isLoading: isLoadingTypes } = useQuery({
+    queryKey: ['settings', 'analysis-types'],
+    queryFn: getAnalysisTypes,
+  })
+
+  const { data: prompts, isLoading: isLoadingPrompts } = useQuery({
     queryKey: ['settings', 'prompts'],
     queryFn: getPrompts,
   })
+
+  const isLoading = isLoadingTypes || isLoadingPrompts
 
   const current = prompts?.find((p) => p.analysis_type === selectedType)
   const savedPrompt = current?.system_prompt ?? ''
@@ -64,18 +63,23 @@ export function PromptsTab() {
         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
           Analysis type
         </label>
-        <Select value={selectedType} onValueChange={handleTypeChange}>
+        <Select value={selectedType} onValueChange={handleTypeChange} disabled={isLoadingTypes}>
           <SelectTrigger className="w-64">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {ANALYSIS_TYPES.map((t) => (
+            {(analysisTypes ?? []).map((t) => (
               <SelectItem key={t.value} value={t.value}>
                 {t.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {analysisTypes && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {analysisTypes.find((t) => t.value === selectedType)?.description}
+          </p>
+        )}
       </div>
 
       <div>

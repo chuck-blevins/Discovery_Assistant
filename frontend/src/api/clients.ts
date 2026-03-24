@@ -1,6 +1,19 @@
 import { api } from '@/lib/api'
 import type { ClientCreate, ClientNoteResponse, ClientResponse, ClientUpdate } from '@/types/api'
 
+export interface IntakeScopeRequest {
+  company_name: string
+  context?: string
+  win_definition?: string
+}
+
+export interface IntakeScopeResponse {
+  engagement_summary: string
+  icp_hypothesis: string[]
+  discovery_questions: string[]
+  suggested_engagement_type: string
+}
+
 export async function listClients(includeArchived = false): Promise<ClientResponse[]> {
   const query = includeArchived ? '?include_archived=true' : ''
   return api.get<ClientResponse[]>(`/clients${query}`)
@@ -36,4 +49,8 @@ export async function createNote(clientId: string, content: string): Promise<Cli
 
 export async function deleteNote(clientId: string, noteId: string): Promise<void> {
   return api.delete<void>(`/clients/${clientId}/notes/${noteId}`)
+}
+
+export async function intakeScope(data: IntakeScopeRequest): Promise<IntakeScopeResponse> {
+  return api.post<IntakeScopeResponse>('/intake-scope', data)
 }

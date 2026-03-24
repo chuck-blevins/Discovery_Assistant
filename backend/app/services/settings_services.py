@@ -23,6 +23,7 @@ def _get_defaults() -> dict[str, str]:
         ICP_SYSTEM_PROMPT,
         ONBOARDING_SYSTEM_PROMPT,
         RECOMMENDATIONS_SYSTEM_PROMPT,
+        INTAKE_SCOPE_SYSTEM_PROMPT,
     )
     return {
         "problem_validation": PROBLEM_VALIDATION_SYSTEM_PROMPT,
@@ -31,6 +32,7 @@ def _get_defaults() -> dict[str, str]:
         "icp_refinement": ICP_SYSTEM_PROMPT,
         "onboarding": ONBOARDING_SYSTEM_PROMPT,
         "recommendations": RECOMMENDATIONS_SYSTEM_PROMPT,
+        "client_intake": INTAKE_SCOPE_SYSTEM_PROMPT,
     }
 
 
@@ -41,7 +43,40 @@ ANALYSIS_TYPES = [
     "icp_refinement",
     "onboarding",
     "recommendations",
+    "client_intake",
 ]
+
+# Human-readable labels and descriptions for each analysis type
+ANALYSIS_TYPE_METADATA: dict[str, dict[str, str]] = {
+    "problem_validation": {
+        "label": "Problem Validation",
+        "description": "Analyzes research data to score how well your assumed problem is validated across sources.",
+    },
+    "positioning": {
+        "label": "Positioning",
+        "description": "Surfaces positioning insights from research — differentiators, competitive landscape, messaging angles.",
+    },
+    "persona_buildout": {
+        "label": "Persona Build-out",
+        "description": "Synthesizes customer personas from research data — goals, pain points, behaviors, and quotes.",
+    },
+    "icp_refinement": {
+        "label": "ICP Refinement",
+        "description": "Refines your Ideal Customer Profile using research signals — firmographics, buying triggers, fit indicators.",
+    },
+    "onboarding": {
+        "label": "Onboarding",
+        "description": "Summarizes client context from notes and interviews — themes, interest areas, and gaps to explore.",
+    },
+    "recommendations": {
+        "label": "Recommendations",
+        "description": "Generates next-step recommendations and interview/survey templates based on analysis results.",
+    },
+    "client_intake": {
+        "label": "Client Intake",
+        "description": "Generates an AI scope hypothesis for a new client — engagement summary, ICP hypothesis, and discovery questions. Used in the new client intake wizard.",
+    },
+}
 
 
 # ── Prompt template CRUD ──────────────────────────────────────────────────────

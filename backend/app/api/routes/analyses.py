@@ -130,6 +130,14 @@ async def stream_analysis(
             detail=f"An analysis was run recently. Please wait {_ANALYSIS_COOLDOWN_SECONDS} seconds before running another.",
         )
 
+    # Pre-check API key before starting the stream — gives a clear 422 instead of a mid-stream error
+    llm_check = await settings_service.get_llm_settings(db, current_user.id)
+    if not llm_check["api_key_is_set"]:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Claude API key is not configured. Add it in Settings > LLM Config.",
+        )
+
     data_sources = await data_source_service.list_data_sources(db, project_id)
     if not data_sources:
         raise HTTPException(

@@ -14,12 +14,19 @@ import { useClients } from '@/hooks/useClients'
 import { useClientFormStore } from '@/stores/useClientFormStore'
 import { ClientForm } from './ClientForm'
 import { ClientRow } from './ClientRow'
+import { ClientIntakeWizard } from './ClientIntakeWizard'
 
 export function ClientList() {
   const [includeArchived, setIncludeArchived] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
 
   // Shared form state — also writable by ClientSidebar via store
   const { open: formOpen, client: editingClient, openCreate, openEdit, close } = useClientFormStore()
+
+  function openWizard() {
+    close() // close ClientForm if it happens to be open
+    setWizardOpen(true)
+  }
 
   const { data: clients, isLoading, isError } = useClients(includeArchived)
 
@@ -28,7 +35,10 @@ export function ClientList() {
       {/* Header row */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Your Clients</h1>
-        <Button onClick={openCreate}>New Client</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={openCreate}>New Client</Button>
+          <Button onClick={openWizard}>Add with AI</Button>
+        </div>
       </div>
 
       {/* Show archived toggle */}
@@ -81,7 +91,10 @@ export function ClientList() {
       {!isLoading && !isError && clients && clients.length === 0 && (
         <div className="flex flex-col items-center gap-4 py-12 text-muted-foreground">
           <p>No clients yet.</p>
-          <Button onClick={openCreate}>New Client</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={openCreate}>New Client</Button>
+            <Button onClick={openWizard}>Add with AI</Button>
+          </div>
         </div>
       )}
 
@@ -110,6 +123,11 @@ export function ClientList() {
         open={formOpen}
         onOpenChange={(v) => { if (!v) close() }}
         client={editingClient ?? undefined}
+      />
+
+      <ClientIntakeWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
       />
     </div>
   )
