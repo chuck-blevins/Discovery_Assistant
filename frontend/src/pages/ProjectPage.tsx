@@ -1,9 +1,12 @@
+import { useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
 import { getConfidenceColor } from '@/components/app/projects/ConfidenceIndicator'
 import { StrengthBadge } from '@/components/app/projects/StrengthBadge'
 import DataSourceSection from '@/components/app/data-sources/DataSourceSection'
@@ -12,7 +15,7 @@ import { PersonaCard } from '@/components/app/persona/PersonaCard'
 import { useDataSources } from '@/hooks/useDataSources'
 import { useIcp } from '@/hooks/useIcp'
 import { usePersona } from '@/hooks/usePersona'
-import { useProject } from '@/hooks/useProjects'
+import { useCreateProjectNote, useDeleteProjectNote, useProject, useProjectNotes } from '@/hooks/useProjects'
 import { OBJECTIVE_LABELS } from '@/lib/constants'
 
 export default function ProjectPage() {
@@ -28,6 +31,32 @@ export default function ProjectPage() {
     project?.objective === 'icp-refinement'
   )
   const hasDataSources = (dataSources?.length ?? 0) > 0
+
+  const { data: notes = [] } = useProjectNotes(projectId)
+  const createNote = useCreateProjectNote(projectId ?? '')
+  const deleteNote = useDeleteProjectNote(projectId ?? '')
+  const [noteText, setNoteText] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  async function handleAddNote(e: React.FormEvent) {
+    e.preventDefault()
+    if (!noteText.trim()) return
+    try {
+      await createNote.mutateAsync(noteText.trim())
+      setNoteText('')
+      textareaRef.current?.focus()
+    } catch {
+      toast.error('Failed to save note')
+    }
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    try {
+      await deleteNote.mutateAsync(noteId)
+    } catch {
+      toast.error('Failed to delete note')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -203,6 +232,58 @@ export default function ProjectPage() {
           )}
         </section>
       )}
+
+      {/* Project Notes */}
+      <div className="mt-6 rounded-lg border bg-card p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Project Notes</h2>
+
+        <form onSubmit={handleAddNote} className="space-y-2">
+          <Textarea
+            ref={textareaRef}
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            placeholder="Add a note about this project…"
+            rows={3}
+            disabled={createNote.isPending}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault()
+                handleAddNote(e as unknown as React.FormEvent)
+              }
+            }}
+          />
+          <div className="flex justify-end">
+            <Button type="submit" size="sm" disabled={createNote.isPending || !noteText.trim()}>
+              {createNote.isPending ? 'Saving…' : 'Add Note'}
+            </Button>
+          </div>
+        </form>
+
+        {notes.length > 0 ? (
+          <ul className="space-y-2 pt-1">
+            {notes.map((note) => (
+              <li key={note.id} className="group flex items-start gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                <div className="flex-1 min-w-0">
+                  <p className="whitespace-pre-wrap break-words">{note.content}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {new Date(note.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDeleteNote(note.id)}
+                  disabled={deleteNote.isPending}
+                  className="mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                  aria-label="Delete note"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-muted-foreground italic">No notes yet.</p>
+        )}
+      </div>
     </>
   )
 }

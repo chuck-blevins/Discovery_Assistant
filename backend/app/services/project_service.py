@@ -141,3 +141,61 @@ def apply_staleness_decay(
     months_elapsed = (now - last_analyzed_at).days / 30.0
     decayed = confidence_score - (0.05 * months_elapsed)
     return max(0.0, min(0.95, decayed))
+
+
+# ── Project Notes ─────────────────────────────────────────────────────────────
+
+from app.models.project_note import ProjectNote
+from app.schemas.project import ProjectNoteCreate
+
+
+async def create_project_note(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+    data: ProjectNoteCreate,
+) -> ProjectNote:
+    """Append a timestamped note to a project."""
+    note = ProjectNote(
+        id=uuid.uuid4(),
+        project_id=project_id,
+        content=data.content,
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(note)
+    await db.commit()
+    await db.refresh(note)
+    return note
+
+
+async def list_project_notes(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+) -> list[ProjectNote]:
+    """Return all notes for a project, newest first."""
+    stmt = (
+        select(ProjectNote)
+        .where(ProjectNote.project_id == project_id)
+        .order_by(ProjectNote.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_project_note(
+    db: AsyncSession,
+    note_id: uuid.UUID,
+    project_id: uuid.UUID,
+) -> ProjectNote | None:
+    """Return note if it belongs to the given project, else None."""
+    stmt = select(ProjectNote).where(
+        ProjectNote.id == note_id,
+        ProjectNote.project_id == project_id,
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def delete_project_note(db: AsyncSession, note: ProjectNote) -> None:
+    """Hard-delete a single project note."""
+    await db.delete(note)
+    await db.commit()

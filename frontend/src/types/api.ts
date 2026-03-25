@@ -64,6 +64,13 @@ export interface ClientNoteResponse {
   created_at: string
 }
 
+export interface ProjectNoteResponse {
+  id: string
+  project_id: string
+  content: string
+  created_at: string
+}
+
 export type ClientUpdate = Partial<ClientCreate>
 
 /** Strength of support for problem-validation (Epic 2/3). */

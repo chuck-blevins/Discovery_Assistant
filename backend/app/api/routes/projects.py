@@ -22,7 +22,7 @@ from app.db import get_db
 from app.models.user import User
 from app.schemas.icp import IcpResponse
 from app.schemas.persona import PersonaResponse
-from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, QuickViewQuote
+from app.schemas.project import ProjectCreate, ProjectNoteCreate, ProjectNoteResponse, ProjectResponse, ProjectUpdate, QuickViewQuote
 from app.services import (
     analysis_service,
     audit_service,
@@ -320,4 +320,72 @@ async def delete_project(
             {"name": project_name, "client_id": str(client_id)},
         )
     )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ── Project Notes ─────────────────────────────────────────────────────────────
+
+@router.post(
+    "/projects/{project_id}/notes",
+    response_model=ProjectNoteResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a note to a project",
+)
+async def create_project_note(
+    project_id: uuid.UUID,
+    data: ProjectNoteCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ProjectNoteResponse:
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    client = await client_service.get_client(db, project.client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    note = await project_service.create_project_note(db, project_id, data)
+    return ProjectNoteResponse.model_validate(note)
+
+
+@router.get(
+    "/projects/{project_id}/notes",
+    response_model=list[ProjectNoteResponse],
+    summary="List notes for a project",
+)
+async def list_project_notes(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[ProjectNoteResponse]:
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    client = await client_service.get_client(db, project.client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    notes = await project_service.list_project_notes(db, project_id)
+    return [ProjectNoteResponse.model_validate(n) for n in notes]
+
+
+@router.delete(
+    "/projects/{project_id}/notes/{note_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a project note",
+)
+async def delete_project_note(
+    project_id: uuid.UUID,
+    note_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    client = await client_service.get_client(db, project.client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    note = await project_service.get_project_note(db, note_id, project_id)
+    if not note:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+    await project_service.delete_project_note(db, note)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
