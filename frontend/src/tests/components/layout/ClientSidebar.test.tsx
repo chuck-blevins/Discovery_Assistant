@@ -1,19 +1,28 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { axe } from 'vitest-axe'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ClientSidebar } from '@/components/app/layout/ClientSidebar'
 import { useSidebarStore } from '@/stores/useSidebarStore'
 
+vi.mock('@/api/settings', () => ({
+  getStripeSettings: vi.fn().mockResolvedValue({ stripe_key_is_set: false }),
+  getLLMSettings: vi.fn().mockResolvedValue({ api_key_is_set: false }),
+}))
+
 function renderSidebar() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <MemoryRouter>
-      <TooltipProvider delayDuration={0}>
-        <ClientSidebar />
-      </TooltipProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <TooltipProvider delayDuration={0}>
+          <ClientSidebar />
+        </TooltipProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 }
 
