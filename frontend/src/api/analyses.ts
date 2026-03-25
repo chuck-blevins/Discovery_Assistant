@@ -116,6 +116,7 @@ export async function runAnalysisStream(
 
   const decoder = new TextDecoder()
   let buffer = ''
+  let terminated = false  // true once onDone or onError has been called
 
   try {
     while (true) {
@@ -136,8 +137,10 @@ export async function runAnalysisStream(
           } else if (event.type === 'result') {
             callbacks.onResult?.(event)
           } else if (event.type === 'done') {
+            terminated = true
             callbacks.onDone?.()
           } else if (event.type === 'error') {
+            terminated = true
             callbacks.onError?.(event.message)
           }
         } catch (e) {
@@ -147,5 +150,10 @@ export async function runAnalysisStream(
     }
   } finally {
     reader.releaseLock()
+  }
+
+  // Stream closed without a done/error event — the backend likely threw before yielding.
+  if (!terminated) {
+    callbacks.onError?.('Analysis connection was lost. Please try again.')
   }
 }

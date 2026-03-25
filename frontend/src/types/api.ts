@@ -73,7 +73,7 @@ export interface ProjectResponse {
   id: string
   client_id: string
   name: string
-  objective: 'problem-validation' | 'positioning' | 'persona-buildout' | 'icp-refinement'
+  objective: 'problem-validation' | 'positioning' | 'persona-buildout' | 'icp-refinement' | 'onboarding'
   target_segments: string[]
   assumed_problem?: string | null
   /** Truncated for quick view (e.g. first 80 chars). */
@@ -95,7 +95,7 @@ export interface ProjectResponse {
 
 export interface ProjectCreate {
   name: string
-  objective: 'problem-validation' | 'positioning' | 'persona-buildout' | 'icp-refinement'
+  objective: 'problem-validation' | 'positioning' | 'persona-buildout' | 'icp-refinement' | 'onboarding'
   target_segments?: string[]
   assumed_problem?: string | null
 }

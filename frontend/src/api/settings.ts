@@ -8,6 +8,16 @@ import type {
   StripeSettingsUpdate,
 } from '@/types/api'
 
+export interface AnalysisTypeInfo {
+  value: string
+  label: string
+  description: string
+}
+
+export async function getAnalysisTypes(): Promise<AnalysisTypeInfo[]> {
+  return api.get<AnalysisTypeInfo[]>('/settings/analysis-types')
+}
+
 export async function getPrompts(): Promise<PromptTemplateResponse[]> {
   return api.get<PromptTemplateResponse[]>('/settings/prompts')
 }

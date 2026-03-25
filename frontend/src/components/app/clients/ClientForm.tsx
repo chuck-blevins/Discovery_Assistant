@@ -175,7 +175,7 @@ export function ClientForm({ open, onOpenChange, client }: ClientFormProps) {
             {/* Name */}
             <div className="space-y-1">
               <Label htmlFor="client-name">
-                Name <span aria-hidden="true" className="text-zinc-400">*</span>
+                Company name <span aria-hidden="true" className="text-zinc-400">*</span>
               </Label>
               <Input
                 id="client-name"

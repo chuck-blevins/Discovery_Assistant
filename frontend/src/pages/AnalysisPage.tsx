@@ -48,8 +48,8 @@ export default function AnalysisPage() {
 
   const { data: selectedAnalysis } = useAnalysis(selectedAnalysisId ?? undefined)
   const { runStream } = useRunAnalysisStream(projectId)
-  const { data: icp, isFetching: icpFetching, refetch: refetchIcp } = useIcp(projectId)
-  const { data: onboardingSummary, isFetching: onboardingFetching, refetch: refetchOnboarding } = useOnboarding(projectId)
+  const { data: icp, isFetching: icpFetching, refetch: refetchIcp } = useIcp(projectId, project?.objective === 'icp-refinement')
+  const { data: onboardingSummary, isFetching: onboardingFetching, refetch: refetchOnboarding } = useOnboarding(projectId, project?.objective === 'onboarding')
   const resultsSectionRef = useRef<HTMLDivElement>(null)
   const autoStartDoneRef = useRef(false)
   const viewLatestHandledRef = useRef(false)

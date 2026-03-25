@@ -29,6 +29,22 @@ DbDep = Annotated[AsyncSession, Depends(get_db)]
 UserDep = Annotated[User, Depends(get_current_user)]
 
 
+# ── Analysis Types ────────────────────────────────────────────────────────────
+
+@router.get("/analysis-types", summary="List available analysis types with labels and descriptions")
+async def list_analysis_types(current_user: UserDep) -> list[dict]:
+    """Return all supported analysis types with human-readable labels and descriptions."""
+    metadata = settings_service.ANALYSIS_TYPE_METADATA
+    return [
+        {
+            "value": t,
+            "label": metadata[t]["label"],
+            "description": metadata[t]["description"],
+        }
+        for t in settings_service.ANALYSIS_TYPES
+    ]
+
+
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
 @router.get("/prompts", response_model=list[PromptTemplateResponse])

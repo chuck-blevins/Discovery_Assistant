@@ -34,7 +34,19 @@ const existingClient: ClientResponse = {
   assumed_solution: null,
   assumed_market: null,
   initial_notes: null,
+  contact_name: null,
+  contact_email: null,
+  contact_phone: null,
+  website: null,
+  engagement_status: null,
   status: 'active',
+  contract_value: null,
+  billing_type: null,
+  hourly_rate: null,
+  agreed_hours: null,
+  contract_start_date: null,
+  contract_end_date: null,
+  stripe_customer_id: null,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-15T00:00:00Z',
   archived_at: null,
@@ -63,7 +75,7 @@ describe('ClientForm — create mode', () => {
       <ClientForm open={true} onOpenChange={vi.fn()} />
     )
     expect(screen.getByRole('heading', { name: /new client/i })).toBeInTheDocument()
-    expect(screen.getByLabelText(/name/i)).toHaveValue('')
+    expect(screen.getByLabelText(/company name/i)).toHaveValue('')
   })
 
   it('shows inline error when name is empty on submit', async () => {
@@ -87,7 +99,7 @@ describe('ClientForm — create mode', () => {
       <ClientForm open={true} onOpenChange={onOpenChange} />
     )
 
-    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Beta Inc' } })
+    fireEvent.change(screen.getByLabelText(/company name/i), { target: { value: 'Beta Inc' } })
     fireEvent.click(screen.getByRole('button', { name: /create client/i }))
 
     await waitFor(() => {
@@ -108,7 +120,7 @@ describe('ClientForm — create mode', () => {
       <ClientForm open={true} onOpenChange={vi.fn()} />
     )
 
-    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Acme Corp' } })
+    fireEvent.change(screen.getByLabelText(/company name/i), { target: { value: 'Acme Corp' } })
     fireEvent.click(screen.getByRole('button', { name: /create client/i }))
 
     await waitFor(() => {
@@ -132,7 +144,7 @@ describe('ClientForm — edit mode', () => {
       <ClientForm open={true} onOpenChange={vi.fn()} client={existingClient} />
     )
     expect(screen.getByRole('heading', { name: /edit client/i })).toBeInTheDocument()
-    expect(screen.getByLabelText(/name/i)).toHaveValue('Acme Corp')
+    expect(screen.getByLabelText(/company name/i)).toHaveValue('Acme Corp')
   })
 
   it('calls onOpenChange(false) on successful update', async () => {
@@ -145,7 +157,7 @@ describe('ClientForm — edit mode', () => {
       <ClientForm open={true} onOpenChange={onOpenChange} client={existingClient} />
     )
 
-    fireEvent.change(screen.getByLabelText(/name/i), {
+    fireEvent.change(screen.getByLabelText(/company name/i), {
       target: { value: 'Acme Corp Updated' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))

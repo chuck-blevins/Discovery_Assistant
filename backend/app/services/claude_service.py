@@ -545,7 +545,7 @@ async def run_positioning_analysis(
     prompt = build_positioning_prompt(objective, data_sources)
 
     message = await _invoke_claude(
-        ssystem=system_prompt or POSITIONING_SYSTEM_PROMPT,
+        system=system_prompt or POSITIONING_SYSTEM_PROMPT,
         user_content=prompt,
         model=model,
         api_key=api_key,
@@ -1004,4 +1004,106 @@ async def run_recommendations_generation(
         "survey_template_md": (parsed.get("survey_template_md") or "").strip() or None,
         "can_create_next_project": bool(parsed.get("can_create_next_project", False)),
         "suggested_next_objective": suggested,
+    }
+
+
+# ── Client Intake Scope system prompt ────────────────────────────────────────
+
+INTAKE_SCOPE_SYSTEM_PROMPT = """You are an expert product consultant helping scope a new client engagement. Given information about the client, generate a structured scope hypothesis to kick off the discovery process.
+
+Return ONLY a valid JSON object (no prose before or after) with this exact structure:
+
+{
+  "engagement_summary": "<2-4 sentence summary of the engagement scope and goals>",
+  "icp_hypothesis": ["<ICP attribute 1>", "<ICP attribute 2>", ...],
+  "discovery_questions": ["<question 1>", "<question 2>", ...],
+  "suggested_engagement_type": "<one of: discovery, positioning, product-strategy, go-to-market, other>"
+}
+
+Field definitions:
+- engagement_summary: A concise description of what this engagement is about, what success looks like, and the key strategic questions to answer. Write as if briefing a colleague before a kickoff call.
+- icp_hypothesis: 4-8 short hypothesis tags describing the ideal customer profile (e.g., "B2B SaaS, 50-200 employees", "VP Product or CPO buyer", "Series A-B stage"). Keep each tag under 8 words.
+- discovery_questions: 4-6 open-ended questions to ask the client in the first discovery session. Focus on uncovering real problems, not confirming assumptions.
+- suggested_engagement_type: The most likely type of engagement based on context.
+
+Rules:
+- Return exactly one JSON object, nothing else
+- All fields are required
+- icp_hypothesis: minimum 3 tags, maximum 8
+- discovery_questions: minimum 3 questions, maximum 6
+- Be specific and grounded — avoid generic consulting-speak
+- If context is minimal, make reasonable inferences but stay conservative
+"""
+
+_INTAKE_SCOPE_REQUIRED_KEYS = {"engagement_summary", "icp_hypothesis", "discovery_questions", "suggested_engagement_type"}
+
+_INTAKE_SCOPE_CONTEXT_LIMIT = 2000  # truncate context beyond this to prevent prompt bloat
+
+
+@traceable(name="runIntakeScope")
+async def run_intake_scope(
+    company_name: str,
+    context: str,
+    win_definition: str,
+    *,
+    system_prompt: str | None = None,
+    model: str | None = None,
+    api_key: str | None = None,
+    timeout: float | None = None,
+) -> dict:
+    """Generate AI scope hypothesis for a new client engagement.
+
+    Returns a dict with:
+    - engagement_summary: str
+    - icp_hypothesis: list[str]
+    - discovery_questions: list[str]
+    - suggested_engagement_type: str
+    - tokens_used: int
+    - cost_usd: float
+    - raw_response: str
+    """
+    # Truncate context to avoid prompt bloat
+    truncated_context = context[:_INTAKE_SCOPE_CONTEXT_LIMIT] if context else ""
+    if context and len(context) > _INTAKE_SCOPE_CONTEXT_LIMIT:
+        truncated_context += "\n[... context truncated ...]"
+
+    parts: list[str] = [
+        f"## Client: {company_name}",
+    ]
+    if truncated_context:
+        parts.append(f"\n## Context\n{truncated_context}")
+    if win_definition:
+        parts.append(f"\n## What does a win look like?\n{win_definition}")
+
+    prompt = "\n".join(parts)
+
+    message = await _invoke_claude(
+        system=system_prompt or INTAKE_SCOPE_SYSTEM_PROMPT,
+        user_content=prompt,
+        model=model,
+        api_key=api_key,
+        timeout=timeout,
+    )
+
+    raw_text = message.content[0].text
+    input_tokens = message.usage.input_tokens
+    output_tokens = message.usage.output_tokens
+
+    parsed = _extract_json(raw_text)
+
+    missing = _INTAKE_SCOPE_REQUIRED_KEYS - parsed.keys()
+    if missing:
+        raise ValueError(
+            f"Claude intake scope response missing required keys: {missing}. "
+            f"Response preview: {raw_text[:200]}"
+        )
+
+    return {
+        "engagement_summary": str(parsed.get("engagement_summary") or "").strip(),
+        "icp_hypothesis": [str(t).strip() for t in (parsed.get("icp_hypothesis") or []) if str(t).strip()],
+        "discovery_questions": [str(q).strip() for q in (parsed.get("discovery_questions") or []) if str(q).strip()],
+        "suggested_engagement_type": str(parsed.get("suggested_engagement_type") or "").strip(),
+        "tokens_used": input_tokens + output_tokens,
+        "cost_usd": calculate_cost(input_tokens, output_tokens, CLAUDE_MODEL),
+        "raw_response": raw_text,
     }

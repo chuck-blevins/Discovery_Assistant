@@ -399,3 +399,58 @@ class TestRunRecommendationsGeneration:
         with _patch_make_client(_make_mock_response({"action_items": []})):
             with pytest.raises(ValueError, match="missing required keys"):
                 await run_recommendations_generation("P", "positioning", 0.6, 2)
+
+
+# ============================================================================
+# run_intake_scope tests
+# ============================================================================
+
+_VALID_INTAKE_PAYLOAD = {
+    "engagement_summary": "Acme Corp engagement: discover ICP and messaging for enterprise sales.",
+    "icp_hypothesis": ["B2B SaaS", "VP Product buyer", "Series A-B"],
+    "discovery_questions": ["What is your biggest activation blocker?", "Describe your best customer."],
+    "suggested_engagement_type": "discovery",
+}
+
+
+class TestRunIntakeScope:
+    @pytest.mark.asyncio
+    async def test_builds_user_message_from_company_name(self):
+        """User message must include company_name."""
+        from app.services.claude_service import run_intake_scope
+        with _patch_make_client(_make_mock_response(_VALID_INTAKE_PAYLOAD)) as mock_make_client:
+            await run_intake_scope(
+                company_name="Acme Corp",
+                context="B2B SaaS platform",
+                win_definition="Clear ICP",
+            )
+        # Verify the client was called with content that includes the company name
+        mock_client = mock_make_client.return_value
+        call_kwargs = mock_client.messages.create.call_args
+        assert call_kwargs is not None
+        messages = call_kwargs.kwargs.get("messages") or call_kwargs.args[0] if call_kwargs.args else None
+        if messages is None and hasattr(call_kwargs, "kwargs"):
+            messages = call_kwargs.kwargs.get("messages", [])
+        user_msg = next((m for m in (messages or []) if m.get("role") == "user"), None)
+        assert user_msg is not None, "No user message passed to Claude"
+        assert "Acme Corp" in user_msg["content"]
+
+    @pytest.mark.asyncio
+    async def test_returns_all_required_keys(self):
+        from app.services.claude_service import run_intake_scope
+        with _patch_make_client(_make_mock_response(_VALID_INTAKE_PAYLOAD)):
+            result = await run_intake_scope("Acme Corp", "context", "win")
+        assert "engagement_summary" in result
+        assert "icp_hypothesis" in result
+        assert "discovery_questions" in result
+        assert "suggested_engagement_type" in result
+        assert "tokens_used" in result
+        assert "cost_usd" in result
+
+    @pytest.mark.asyncio
+    async def test_missing_required_keys_raises_value_error(self):
+        from app.services.claude_service import run_intake_scope
+        incomplete = {"some": "junk"}
+        with _patch_make_client(_make_mock_response(incomplete)):
+            with pytest.raises(ValueError, match="missing required keys"):
+                await run_intake_scope("Acme Corp", "", "")
