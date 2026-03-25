@@ -545,7 +545,7 @@ async def run_positioning_analysis(
     prompt = build_positioning_prompt(objective, data_sources)
 
     message = await _invoke_claude(
-        ssystem=system_prompt or POSITIONING_SYSTEM_PROMPT,
+        system=system_prompt or POSITIONING_SYSTEM_PROMPT,
         user_content=prompt,
         model=model,
         api_key=api_key,

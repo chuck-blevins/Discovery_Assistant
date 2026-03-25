@@ -55,6 +55,7 @@ export default function ClientPage() {
 
   const [noteText, setNoteText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { open: formOpen, client: editingClient, openEdit, close: closeForm } = useClientFormStore()
 
   useEffect(() => {
     if (clientJustCreated && clientName) {
@@ -97,7 +98,6 @@ export default function ClientPage() {
   }
 
   const hasContactInfo = client.contact_name || client.contact_email || client.contact_phone || client.website
-  const { open: formOpen, client: editingClient, openEdit, close: closeForm } = useClientFormStore()
 
   return (
     <>
@@ -225,6 +225,10 @@ export default function ClientPage() {
         </dl>
       </div>
 
+      <div className="mb-10">
+        <ProjectTable clientId={client.id} clientName={client.name} />
+      </div>
+
       {/* Notes Section */}
       <div className="mb-6 rounded-lg border bg-card p-4 space-y-3">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Engagement Notes</h2>
@@ -280,8 +284,6 @@ export default function ClientPage() {
       <TimeSessionList clientId={client.id} />
 
       <InvoiceList clientId={client.id} />
-
-      <ProjectTable clientId={client.id} clientName={client.name} />
 
       <ClientForm
         open={formOpen}

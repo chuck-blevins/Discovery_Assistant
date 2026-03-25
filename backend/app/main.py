@@ -57,6 +57,9 @@ FastAPI middleware stack order:
 import logging
 import os
 
+from dotenv import load_dotenv
+load_dotenv()  # no-op when env vars already set (e.g. via Docker); loads .env for local uvicorn runs
+
 # LangSmith: ensure tracing is off unless explicitly enabled with a valid key (avoids 403 on ingest)
 _tracing = (os.getenv("LANGSMITH_TRACING") or "").strip().lower()
 if _tracing not in ("true", "1"):

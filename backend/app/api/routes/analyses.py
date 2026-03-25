@@ -422,7 +422,20 @@ async def stream_analysis(
                         exc,
                         exc_info=True,
                     )
-                    yield _sse({"type": "error", "message": "Analysis failed. Please try again."})
+                    import anthropic as _anthropic
+                    if isinstance(exc, _anthropic.AuthenticationError):
+                        msg = "Claude API key is invalid or expired. Check Settings > LLM Config."
+                    elif isinstance(exc, _anthropic.RateLimitError):
+                        msg = "Claude API rate limit reached. Please wait a moment and try again."
+                    elif isinstance(exc, _anthropic.APIStatusError) and exc.status_code == 529:
+                        msg = "Claude is overloaded right now. Please try again in a minute."
+                    elif isinstance(exc, _anthropic.APIConnectionError):
+                        msg = "Could not reach Claude API. Check your network connection."
+                    elif isinstance(exc, (ValueError, KeyError)):
+                        msg = f"Analysis response could not be parsed: {exc}"
+                    else:
+                        msg = "Analysis failed. Please try again."
+                    yield _sse({"type": "error", "message": msg})
 
     return StreamingResponse(
         event_generator(),
