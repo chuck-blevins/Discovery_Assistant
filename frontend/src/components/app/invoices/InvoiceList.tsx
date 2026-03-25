@@ -4,6 +4,7 @@ import { ExternalLink, Plus, Send, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useInvoices, useCreateInvoice, useDeleteInvoice, useSendInvoice } from '@/hooks/useInvoices'
+import { useTimeSessions } from '@/hooks/useTimeSessions'
 import { InvoiceForm } from './InvoiceForm'
 import type { InvoiceStatus } from '@/types/api'
 
@@ -28,6 +29,7 @@ export function InvoiceList({ clientId }: Props) {
   const createInvoice = useCreateInvoice(clientId)
   const deleteInvoice = useDeleteInvoice(clientId)
   const sendInvoice = useSendInvoice(clientId)
+  const { data: timeSessions = [] } = useTimeSessions(clientId)
   const [showForm, setShowForm] = useState(false)
 
   async function handleCreate(data: Parameters<typeof createInvoice.mutateAsync>[0]) {
@@ -75,6 +77,7 @@ export function InvoiceList({ clientId }: Props) {
             onSubmit={handleCreate}
             isPending={createInvoice.isPending}
             onCancel={() => setShowForm(false)}
+            suggestedSessions={timeSessions}
           />
         </div>
       )}
