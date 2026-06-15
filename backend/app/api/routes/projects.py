@@ -7,6 +7,7 @@ Routes:
   PUT    /projects/{project_id}                 - Update project
   PATCH  /projects/{project_id}/archive         - Toggle archive
   DELETE /projects/{project_id}                 - Hard delete
+  POST   /projects/{project_id}/icp/seed        - Seed ICP with intake hypothesis tags
 """
 
 import asyncio
@@ -20,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.db import get_db
 from app.models.user import User
+from pydantic import BaseModel
 from app.schemas.icp import IcpResponse
 from app.schemas.persona import PersonaResponse
 from app.schemas.project import ProjectCreate, ProjectNoteCreate, ProjectNoteResponse, ProjectResponse, ProjectUpdate, QuickViewQuote
@@ -182,6 +184,43 @@ async def get_project_icp(
     logger.info("GET /projects/%s/icp -> found=%s", project_id, icp is not None)
     if not icp:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No ICP for this project")
+    return IcpResponse.model_validate(icp)
+
+
+# ── POST /projects/{project_id}/icp/seed ─────────────────────────────────────
+
+
+class IcpSeedRequest(BaseModel):
+    hypothesis: list[str]
+
+
+@router.post(
+    "/projects/{project_id}/icp/seed",
+    response_model=IcpResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Seed ICP with intake hypothesis tags",
+)
+async def seed_icp(
+    project_id: uuid.UUID,
+    body: IcpSeedRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> IcpResponse:
+    """Seed an ICP record for an icp-refinement project with hypothesis tags from the
+    intake wizard. Only writes if the ICP does not yet have analysis-generated data
+    (i.e. last_analyzed_at is null), so it never overwrites a real analysis result.
+    """
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    client = await client_service.get_client(db, project.client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+
+    icp = await icp_service.seed_icp_hypothesis(db, project_id, body.hypothesis)
+    await db.commit()
+    await db.refresh(icp)
+    logger.info("Seeded ICP for project %s with %d hypothesis tags", project_id, len(body.hypothesis))
     return IcpResponse.model_validate(icp)
 
 

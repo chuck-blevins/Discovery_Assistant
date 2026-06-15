@@ -19,6 +19,7 @@ import { ClientIntakeWizard } from './ClientIntakeWizard'
 export function ClientList() {
   const [includeArchived, setIncludeArchived] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [search, setSearch] = useState('')
 
   // Shared form state — also writable by ClientSidebar via store
   const { open: formOpen, client: editingClient, openCreate, openEdit, close } = useClientFormStore()
@@ -29,6 +30,12 @@ export function ClientList() {
   }
 
   const { data: clients, isLoading, isError } = useClients(includeArchived)
+
+  const filteredClients = search.trim()
+    ? (clients ?? []).filter((c) =>
+        c.name.toLowerCase().includes(search.toLowerCase())
+      )
+    : clients
 
   return (
     <div className="space-y-4">
@@ -41,16 +48,26 @@ export function ClientList() {
         </div>
       </div>
 
-      {/* Show archived toggle */}
-      <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer w-fit">
+      {/* Search + archived toggle */}
+      <div className="flex items-center gap-4">
         <input
-          type="checkbox"
-          checked={includeArchived}
-          onChange={(e) => setIncludeArchived(e.target.checked)}
-          className="rounded border-zinc-300 focus:ring-zinc-400"
+          type="search"
+          placeholder="Search clients…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-8 w-48 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+          aria-label="Search clients"
         />
-        Show archived
-      </label>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={includeArchived}
+            onChange={(e) => setIncludeArchived(e.target.checked)}
+            className="rounded border-zinc-300 focus:ring-zinc-400"
+          />
+          Show archived
+        </label>
+      </div>
 
       {/* Loading */}
       {isLoading && (
@@ -88,7 +105,7 @@ export function ClientList() {
       )}
 
       {/* Empty state */}
-      {!isLoading && !isError && clients && clients.length === 0 && (
+      {!isLoading && !isError && filteredClients && filteredClients.length === 0 && (
         <div className="flex flex-col items-center gap-4 py-12 text-muted-foreground">
           <p>No clients yet.</p>
           <div className="flex items-center gap-2">
@@ -99,7 +116,7 @@ export function ClientList() {
       )}
 
       {/* Client table */}
-      {!isLoading && !isError && clients && clients.length > 0 && (
+      {!isLoading && !isError && filteredClients && filteredClients.length > 0 && (
         <Table aria-label="Client list">
           <TableHeader>
             <TableRow>
@@ -112,7 +129,7 @@ export function ClientList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {clients.map((client) => (
+            {filteredClients.map((client) => (
               <ClientRow key={client.id} client={client} onEdit={openEdit} />
             ))}
           </TableBody>
