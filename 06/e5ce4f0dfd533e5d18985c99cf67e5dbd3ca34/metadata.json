@@ -1,0 +1,41 @@
+{
+  "oobo_version": "0.1.14",
+  "commit_hash": "06e5ce4f0dfd533e5d18985c99cf67e5dbd3ca34",
+  "branch": "nexlayer-deploy",
+  "author": "chuck-blevins <chuck@chuckblevins.com>",
+  "author_type": "agent",
+  "contributors": [
+    {
+      "name": "chuck-blevins <chuck@chuckblevins.com>",
+      "role": "human"
+    },
+    {
+      "name": "claude",
+      "role": "agent"
+    }
+  ],
+  "committed_at": 1782334344,
+  "message": "ci: build and push backend/frontend images to GHCR",
+  "files_changed": [
+    ".github/workflows/build-images.yml"
+  ],
+  "added": 46,
+  "deleted": 0,
+  "file_changes": [
+    {
+      "path": ".github/workflows/build-images.yml",
+      "added": 46,
+      "deleted": 0,
+      "attribution": "human"
+    }
+  ],
+  "ai_added": 0,
+  "ai_deleted": 0,
+  "human_added": 46,
+  "human_deleted": 0,
+  "ai_percentage": 0.0,
+  "session_ids": [
+    "7a2b284d-bbb8-4e91-a4bf-ab671fae9750"
+  ],
+  "transparency_mode": "off"
+}
