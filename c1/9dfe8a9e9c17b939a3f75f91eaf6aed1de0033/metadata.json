@@ -1,0 +1,48 @@
+{
+  "oobo_version": "0.1.14",
+  "commit_hash": "c19dfe8a9e9c17b939a3f75f91eaf6aed1de0033",
+  "branch": "nexlayer-deploy",
+  "author": "chuck-blevins <chuck@chuckblevins.com>",
+  "author_type": "agent",
+  "contributors": [
+    {
+      "name": "chuck-blevins <chuck@chuckblevins.com>",
+      "role": "human"
+    },
+    {
+      "name": "claude",
+      "role": "agent"
+    }
+  ],
+  "committed_at": 1782334172,
+  "message": "feat(frontend): production nginx image with SPA fallback",
+  "files_changed": [
+    "frontend/Dockerfile.prod",
+    "frontend/nginx.conf"
+  ],
+  "added": 32,
+  "deleted": 0,
+  "file_changes": [
+    {
+      "path": "frontend/Dockerfile.prod",
+      "added": 14,
+      "deleted": 0,
+      "attribution": "human"
+    },
+    {
+      "path": "frontend/nginx.conf",
+      "added": 18,
+      "deleted": 0,
+      "attribution": "human"
+    }
+  ],
+  "ai_added": 0,
+  "ai_deleted": 0,
+  "human_added": 32,
+  "human_deleted": 0,
+  "ai_percentage": 0.0,
+  "session_ids": [
+    "7a2b284d-bbb8-4e91-a4bf-ab671fae9750"
+  ],
+  "transparency_mode": "off"
+}
