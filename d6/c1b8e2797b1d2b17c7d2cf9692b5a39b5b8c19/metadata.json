@@ -1,0 +1,76 @@
+{
+  "oobo_version": "0.1.14",
+  "commit_hash": "d6c1b8e2797b1d2b17c7d2cf9692b5a39b5b8c19",
+  "branch": "nexlayer-deploy",
+  "author": "chuck-blevins <chuck@chuckblevins.com>",
+  "author_type": "agent",
+  "contributors": [
+    {
+      "name": "chuck-blevins <chuck@chuckblevins.com>",
+      "role": "human"
+    },
+    {
+      "name": "claude",
+      "role": "agent"
+    }
+  ],
+  "committed_at": 1782334804,
+  "message": "nexlayer",
+  "files_changed": [
+    "backend/app/__pycache__/main.cpython-314.pyc",
+    "backend/tests/__pycache__/test_auth_endpoints.cpython-314-pytest-7.4.3.pyc",
+    "backend/tests/__pycache__/test_jwt_tokens.cpython-314-pytest-7.4.3.pyc",
+    "backend/tests/__pycache__/test_migrations.cpython-314-pytest-7.4.3.pyc",
+    "backend/tests/__pycache__/test_security.cpython-314-pytest-7.4.3.pyc",
+    "frontend/tsconfig.node.tsbuildinfo"
+  ],
+  "added": 1,
+  "deleted": 0,
+  "file_changes": [
+    {
+      "path": "backend/app/__pycache__/main.cpython-314.pyc",
+      "added": 0,
+      "deleted": 0,
+      "attribution": "human"
+    },
+    {
+      "path": "backend/tests/__pycache__/test_auth_endpoints.cpython-314-pytest-7.4.3.pyc",
+      "added": 0,
+      "deleted": 0,
+      "attribution": "human"
+    },
+    {
+      "path": "backend/tests/__pycache__/test_jwt_tokens.cpython-314-pytest-7.4.3.pyc",
+      "added": 0,
+      "deleted": 0,
+      "attribution": "human"
+    },
+    {
+      "path": "backend/tests/__pycache__/test_migrations.cpython-314-pytest-7.4.3.pyc",
+      "added": 0,
+      "deleted": 0,
+      "attribution": "human"
+    },
+    {
+      "path": "backend/tests/__pycache__/test_security.cpython-314-pytest-7.4.3.pyc",
+      "added": 0,
+      "deleted": 0,
+      "attribution": "human"
+    },
+    {
+      "path": "frontend/tsconfig.node.tsbuildinfo",
+      "added": 1,
+      "deleted": 0,
+      "attribution": "human"
+    }
+  ],
+  "ai_added": 0,
+  "ai_deleted": 0,
+  "human_added": 1,
+  "human_deleted": 0,
+  "ai_percentage": 0.0,
+  "session_ids": [
+    "7a2b284d-bbb8-4e91-a4bf-ab671fae9750"
+  ],
+  "transparency_mode": "off"
+}
