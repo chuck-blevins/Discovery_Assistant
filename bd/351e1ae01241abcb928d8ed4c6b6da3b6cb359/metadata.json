@@ -1,0 +1,69 @@
+{
+  "oobo_version": "0.1.14",
+  "commit_hash": "bd351e1ae01241abcb928d8ed4c6b6da3b6cb359",
+  "branch": "nexlayer-deploy",
+  "author": "chuck-blevins <chuck@chuckblevins.com>",
+  "author_type": "agent",
+  "contributors": [
+    {
+      "name": "chuck-blevins <chuck@chuckblevins.com>",
+      "role": "human"
+    },
+    {
+      "name": "claude",
+      "role": "agent"
+    }
+  ],
+  "committed_at": 1782333003,
+  "message": "feat(backend): serve all routes under /api prefix for single-origin deploy",
+  "files_changed": [
+    "backend/app/main.py",
+    "backend/tests/test_analyses.py",
+    "backend/tests/test_http_integration.py",
+    "backend/tests/test_intake_route.py",
+    "backend/tests/test_settings.py"
+  ],
+  "added": 71,
+  "deleted": 77,
+  "file_changes": [
+    {
+      "path": "backend/app/main.py",
+      "added": 35,
+      "deleted": 41,
+      "attribution": "human"
+    },
+    {
+      "path": "backend/tests/test_analyses.py",
+      "added": 4,
+      "deleted": 4,
+      "attribution": "human"
+    },
+    {
+      "path": "backend/tests/test_http_integration.py",
+      "added": 21,
+      "deleted": 21,
+      "attribution": "human"
+    },
+    {
+      "path": "backend/tests/test_intake_route.py",
+      "added": 5,
+      "deleted": 5,
+      "attribution": "human"
+    },
+    {
+      "path": "backend/tests/test_settings.py",
+      "added": 6,
+      "deleted": 6,
+      "attribution": "human"
+    }
+  ],
+  "ai_added": 0,
+  "ai_deleted": 0,
+  "human_added": 71,
+  "human_deleted": 77,
+  "ai_percentage": 0.0,
+  "session_ids": [
+    "7a2b284d-bbb8-4e91-a4bf-ab671fae9750"
+  ],
+  "transparency_mode": "off"
+}
