@@ -1,0 +1,48 @@
+{
+  "oobo_version": "0.1.14",
+  "commit_hash": "1a4e9bbe67c937d90a3a0834e2ca29a44dc69249",
+  "branch": "nexlayer-deploy",
+  "author": "chuck-blevins <chuck@chuckblevins.com>",
+  "author_type": "agent",
+  "contributors": [
+    {
+      "name": "chuck-blevins <chuck@chuckblevins.com>",
+      "role": "human"
+    },
+    {
+      "name": "claude",
+      "role": "agent"
+    }
+  ],
+  "committed_at": 1782333958,
+  "message": "chore: align local dev healthcheck and Vite proxy with /api base",
+  "files_changed": [
+    "docker-compose.yml",
+    "frontend/vite.config.ts"
+  ],
+  "added": 2,
+  "deleted": 2,
+  "file_changes": [
+    {
+      "path": "docker-compose.yml",
+      "added": 1,
+      "deleted": 1,
+      "attribution": "human"
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "added": 1,
+      "deleted": 1,
+      "attribution": "human"
+    }
+  ],
+  "ai_added": 0,
+  "ai_deleted": 0,
+  "human_added": 2,
+  "human_deleted": 2,
+  "ai_percentage": 0.0,
+  "session_ids": [
+    "7a2b284d-bbb8-4e91-a4bf-ab671fae9750"
+  ],
+  "transparency_mode": "off"
+}
