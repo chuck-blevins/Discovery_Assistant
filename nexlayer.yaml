@@ -1,38 +1,44 @@
 application:
-  name: fine-peak-discovery_assistant
+  name: discovery-assistant
   pods:
     - name: backend
-      image: "# filled by pipeline:backend"
-      path: /api
+      image: "registry.nexlayer.io/user_01krc13rb1z2ng6b0bdm6h6wab/discovery_assistant:19efb81bc70"
+      path: /
       servicePorts:
         - 8000
       vars:
-        ACCESS_TOKEN_EXPIRE_MINUTES: "60"
-        DATABASE_HOST: "db"
-        DATABASE_PORT: "5432"
-        DATABASE_URL: "postgresql://app:secret@${postgres:5432}/app"
-        POSTGRES_DB: "discovery_app"
-        POSTGRES_PASSWORD: "postgres"
-        POSTGRES_USER: "postgres"
-        SECRET_KEY: "replace-this-with-a-secure-random-string"
-        SMTP_HOST: "localhost"
-        SMTP_PASSWORD: ""
-        SMTP_PORT: "1025"
-        SMTP_USER: ""
-    - name: frontend
-      image: "# filled by pipeline:frontend"
-      path: /
-      servicePorts:
-        - 3000
-      vars:
-        API_URL: "http://${backend:8000}"
-        NEXT_PUBLIC_API_URL: "http://${backend:8000}"
-        VITE_API_URL: "http://${backend:8000}"
+        DATABASE_URL: "postgresql+asyncpg://postgres:postgres@postgres.pod:5432/discovery_app"
+        STORAGE_ENDPOINT_URL: "http://minio.pod:9000"
+        S3_ENDPOINT_URL: "http://minio.pod:9000"
+        STORAGE_ACCESS_KEY: "minioadmin"
+        STORAGE_SECRET_KEY: "minioadmin"
+        AWS_ACCESS_KEY_ID: "minioadmin"
+        AWS_SECRET_ACCESS_KEY: "minioadmin"
+        STORAGE_BUCKET_NAME: "discovery-files"
+        S3_BUCKET_NAME: "discovery-app"
+        CORS_ORIGINS: "<% URL %>"
     - name: postgres
       image: mirror.gcr.io/library/postgres:16-alpine
       servicePorts:
         - 5432
       vars:
-        POSTGRES_DB: "app"
-        POSTGRES_PASSWORD: "secret"
-        POSTGRES_USER: "app"
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: discovery_app
+      volumes:
+        - name: discovery-assistant-postgres-data
+          size: 10Gi
+          mountPath: /var/lib/postgresql/data
+    - name: minio
+      image: mirror.gcr.io/library/minio/minio:latest
+      servicePorts:
+        - 9000
+        - 9001
+      command: "server /data --console-address :9001"
+      vars:
+        MINIO_ROOT_USER: minioadmin
+        MINIO_ROOT_PASSWORD: minioadmin
+      volumes:
+        - name: discovery-assistant-minio-data
+          size: 10Gi
+          mountPath: /data

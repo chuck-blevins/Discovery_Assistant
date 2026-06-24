@@ -15,25 +15,25 @@
 
 ## Project Summary
 <!-- nexlayer:section agent-managed=project_summary -->
-An AI-powered product discovery platform designed for consulting workflows to manage clients through ICP definition, persona buildout, and research analysis.
+An AI-powered product discovery platform for consulting workflows that manages the lifecycle of ICP definition, persona buildout, and positioning through AI-assisted analysis of research data.
 <!-- nexlayer:end -->
 
 ## Technology Stack
 <!-- nexlayer:section agent-managed=tech_stack -->
 | Name | Kind | Version | Detected From |
 |------|------|---------|---------------|
-| Python | language | unknown | backend/Dockerfile |
+| Python | language | Not specified | backend/Dockerfile |
 | PostgreSQL | database | 15 | docker-compose.yml |
 | MinIO | infra | latest | docker-compose.yml |
-| TypeScript | language | unknown | tsconfig.json |
+| FastAPI/Python Backend | framework | Not specified | docker-compose.yml |
 <!-- nexlayer:end -->
 
 ## Repository Structure
 <!-- nexlayer:section agent-managed=structure_map -->
-- backend/ — Python API for business logic and AI orchestration
-- frontend/ — User interface for client and project management
-- docs/ — Application documentation and user guides
-- sboms/ — Software Bill of Materials
+- backend/ — Python API and business logic
+- frontend/ — Client-side application
+- docs/ — User guides and documentation
+- nexlayer.yaml — Nexlayer platform configuration
 <!-- nexlayer:end -->
 
 ## External Services Required
@@ -77,78 +77,84 @@ STORAGE_ENDPOINT_URL=http://minio:9000
 
 | Pod | Variable | Value | Kind |
 |-----|----------|-------|------|
-| `backend` | `ACCESS_TOKEN_EXPIRE_MINUTES` | _(set via Nexlayer dashboard)_ | secret |
-| `backend` | `DATABASE_HOST` | `"db"` | plain |
-| `backend` | `DATABASE_PORT` | `"5432"` | plain |
-| `backend` | `DATABASE_URL` | `"postgresql://app:secret@${postgres:5432}/app"` | inter-pod |
-| `backend` | `POSTGRES_DB` | `"discovery_app"` | plain |
-| `backend` | `POSTGRES_PASSWORD` | _(set via Nexlayer dashboard)_ | secret |
-| `backend` | `POSTGRES_USER` | `"postgres"` | plain |
-| `backend` | `SECRET_KEY` | _(set via Nexlayer dashboard)_ | secret |
-| `backend` | `SMTP_HOST` | `"localhost"` | plain |
-| `backend` | `SMTP_PASSWORD` | _(set via Nexlayer dashboard)_ | secret |
-| `backend` | `SMTP_PORT` | `"1025"` | plain |
-| `backend` | `SMTP_USER` | `""` | plain |
-| `frontend` | `API_URL` | `"http://${backend:8000}"` | inter-pod |
-| `frontend` | `NEXT_PUBLIC_API_URL` | `"http://${backend:8000}"` | inter-pod |
-| `frontend` | `VITE_API_URL` | `"http://${backend:8000}"` | inter-pod |
-| `postgres` | `POSTGRES_DB` | `"app"` | plain |
+| `backend` | `DATABASE_URL` | `"postgresql+asyncpg://postgres:postgres@postgres.pod:5432/discovery_app"` | plain |
+| `backend` | `STORAGE_ENDPOINT_URL` | `"http://minio.pod:9000"` | plain |
+| `backend` | `S3_ENDPOINT_URL` | `"http://minio.pod:9000"` | plain |
+| `backend` | `STORAGE_ACCESS_KEY` | `"minioadmin"` | plain |
+| `backend` | `STORAGE_SECRET_KEY` | _(set via Nexlayer dashboard)_ | secret |
+| `backend` | `AWS_ACCESS_KEY_ID` | `"minioadmin"` | plain |
+| `backend` | `AWS_SECRET_ACCESS_KEY` | _(set via Nexlayer dashboard)_ | secret |
+| `backend` | `STORAGE_BUCKET_NAME` | `"discovery-files"` | plain |
+| `backend` | `S3_BUCKET_NAME` | `"discovery-app"` | plain |
+| `backend` | `CORS_ORIGINS` | `"<% URL %>"` | plain |
+| `postgres` | `POSTGRES_USER` | `postgres` | plain |
 | `postgres` | `POSTGRES_PASSWORD` | _(set via Nexlayer dashboard)_ | secret |
-| `postgres` | `POSTGRES_USER` | `"app"` | plain |
+| `postgres` | `POSTGRES_DB` | `discovery_app` | plain |
+| `discovery-assistant-postgres-data` | `size` | `10Gi` | plain |
+| `discovery-assistant-postgres-data` | `mountPath` | `/var/lib/postgresql/data` | plain |
+| `minio` | `command` | `"server /data --console-address :9001"` | plain |
+| `minio` | `MINIO_ROOT_USER` | `minioadmin` | plain |
+| `minio` | `MINIO_ROOT_PASSWORD` | _(set via Nexlayer dashboard)_ | secret |
+| `discovery-assistant-minio-data` | `size` | `10Gi` | plain |
+| `discovery-assistant-minio-data` | `mountPath` | `/data` | plain |
 
 ### Secrets Required
 
 Set these in the Nexlayer dashboard before deploying:
 
-- `ACCESS_TOKEN_EXPIRE_MINUTES` (`backend` pod)
-- `POSTGRES_PASSWORD` (`backend` pod)
-- `SECRET_KEY` (`backend` pod)
-- `SMTP_PASSWORD` (`backend` pod)
+- `STORAGE_SECRET_KEY` (`backend` pod)
+- `AWS_SECRET_ACCESS_KEY` (`backend` pod)
 - `POSTGRES_PASSWORD` (`postgres` pod)
+- `MINIO_ROOT_PASSWORD` (`minio` pod)
 
 ### nexlayer.yaml
 
 ```yaml
 application:
-  name: fine-peak-discovery_assistant
+  name: discovery-assistant
   pods:
     - name: backend
-      image: "registry.nexlayer.io/user_01krc13rb1z2ng6b0bdm6h6wab/discovery_assistant-backend:19efaa9dcdc"
-      path: /api
+      image: "registry.nexlayer.io/user_01krc13rb1z2ng6b0bdm6h6wab/discovery_assistant:19efb81bc70"
+      path: /
       servicePorts:
         - 8000
       vars:
-        ACCESS_TOKEN_EXPIRE_MINUTES: "60"
-        DATABASE_HOST: "db"
-        DATABASE_PORT: "5432"
-        DATABASE_URL: "postgresql://app:secret@${postgres:5432}/app"
-        POSTGRES_DB: "discovery_app"
-        POSTGRES_PASSWORD: "postgres"
-        POSTGRES_USER: "postgres"
-        SECRET_KEY: "replace-this-with-a-secure-random-string"
-        SMTP_HOST: "localhost"
-        SMTP_PASSWORD: ""
-        SMTP_PORT: "1025"
-        SMTP_USER: ""
-    - name: frontend
-      image: "registry.nexlayer.io/user_01krc13rb1z2ng6b0bdm6h6wab/discovery_assistant-frontend:19efaa9dcdc"
-      path: /
-      servicePorts:
-        - 3000
-      vars:
-        API_URL: "http://${backend:8000}"
-        NEXT_PUBLIC_API_URL: "http://${backend:8000}"
-        VITE_API_URL: "http://${backend:8000}"
+        DATABASE_URL: "postgresql+asyncpg://postgres:postgres@postgres.pod:5432/discovery_app"
+        STORAGE_ENDPOINT_URL: "http://minio.pod:9000"
+        S3_ENDPOINT_URL: "http://minio.pod:9000"
+        STORAGE_ACCESS_KEY: "minioadmin"
+        STORAGE_SECRET_KEY: "minioadmin"
+        AWS_ACCESS_KEY_ID: "minioadmin"
+        AWS_SECRET_ACCESS_KEY: "minioadmin"
+        STORAGE_BUCKET_NAME: "discovery-files"
+        S3_BUCKET_NAME: "discovery-app"
+        CORS_ORIGINS: "<% URL %>"
     - name: postgres
       image: mirror.gcr.io/library/postgres:16-alpine
       servicePorts:
         - 5432
       vars:
-        POSTGRES_DB: "app"
-        POSTGRES_PASSWORD: "secret"
-        POSTGRES_USER: "app"
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: discovery_app
+      volumes:
+        - name: discovery-assistant-postgres-data
+          size: 10Gi
+          mountPath: /var/lib/postgresql/data
+    - name: minio
+      image: mirror.gcr.io/library/minio/minio:latest
+      servicePorts:
+        - 9000
+        - 9001
+      command: "server /data --console-address :9001"
+      vars:
+        MINIO_ROOT_USER: minioadmin
+        MINIO_ROOT_PASSWORD: minioadmin
+      volumes:
+        - name: discovery-assistant-minio-data
+          size: 10Gi
+          mountPath: /data
 ```
-
 <!-- nexlayer:end -->
 
 ## Nexlayer Deployment Plan
@@ -178,50 +184,56 @@ application:
 
 ## Nexlayer Configuration
 <!-- nexlayer:section agent-managed=nexlayer_config -->
-**Last deployed:** 2026-06-24T17:33:56Z  
-**Live URL:** https://flamboyant-goshawk-fine-peak-discovery-assistant.cloud.nexlayer.ai  
-**Runtime:** multi · **Port:** 8000  
-**Deploy branch:** main  
+**Last deployed:** 2026-06-24T21:28:34Z  
+**Live URL:** https://flamboyant-goshawk-discovery-assistant.cloud.nexlayer.ai  
+**Runtime:**  · **Port:** auto-detected  
+**Deploy branch:** nexlayer  
 
 ```yaml
 application:
-  name: fine-peak-discovery_assistant
+  name: discovery-assistant
   pods:
     - name: backend
-      image: "registry.nexlayer.io/user_01krc13rb1z2ng6b0bdm6h6wab/discovery_assistant-backend:19efaa9dcdc"
-      path: /api
+      image: "registry.nexlayer.io/user_01krc13rb1z2ng6b0bdm6h6wab/discovery_assistant:19efb81bc70"
+      path: /
       servicePorts:
         - 8000
       vars:
-        ACCESS_TOKEN_EXPIRE_MINUTES: "60"
-        DATABASE_HOST: "db"
-        DATABASE_PORT: "5432"
-        DATABASE_URL: "postgresql://app:secret@${postgres:5432}/app"
-        POSTGRES_DB: "discovery_app"
-        POSTGRES_PASSWORD: "postgres"
-        POSTGRES_USER: "postgres"
-        SECRET_KEY: "replace-this-with-a-secure-random-string"
-        SMTP_HOST: "localhost"
-        SMTP_PASSWORD: ""
-        SMTP_PORT: "1025"
-        SMTP_USER: ""
-    - name: frontend
-      image: "registry.nexlayer.io/user_01krc13rb1z2ng6b0bdm6h6wab/discovery_assistant-frontend:19efaa9dcdc"
-      path: /
-      servicePorts:
-        - 3000
-      vars:
-        API_URL: "http://${backend:8000}"
-        NEXT_PUBLIC_API_URL: "http://${backend:8000}"
-        VITE_API_URL: "http://${backend:8000}"
+        DATABASE_URL: "postgresql+asyncpg://postgres:postgres@postgres.pod:5432/discovery_app"
+        STORAGE_ENDPOINT_URL: "http://minio.pod:9000"
+        S3_ENDPOINT_URL: "http://minio.pod:9000"
+        STORAGE_ACCESS_KEY: "minioadmin"
+        STORAGE_SECRET_KEY: "minioadmin"
+        AWS_ACCESS_KEY_ID: "minioadmin"
+        AWS_SECRET_ACCESS_KEY: "minioadmin"
+        STORAGE_BUCKET_NAME: "discovery-files"
+        S3_BUCKET_NAME: "discovery-app"
+        CORS_ORIGINS: "<% URL %>"
     - name: postgres
       image: mirror.gcr.io/library/postgres:16-alpine
       servicePorts:
         - 5432
       vars:
-        POSTGRES_DB: "app"
-        POSTGRES_PASSWORD: "secret"
-        POSTGRES_USER: "app"
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: discovery_app
+      volumes:
+        - name: discovery-assistant-postgres-data
+          size: 10Gi
+          mountPath: /var/lib/postgresql/data
+    - name: minio
+      image: mirror.gcr.io/library/minio/minio:latest
+      servicePorts:
+        - 9000
+        - 9001
+      command: "server /data --console-address :9001"
+      vars:
+        MINIO_ROOT_USER: minioadmin
+        MINIO_ROOT_PASSWORD: minioadmin
+      volumes:
+        - name: discovery-assistant-minio-data
+          size: 10Gi
+          mountPath: /data
 ```
 <!-- nexlayer:end -->
 
@@ -229,6 +241,7 @@ application:
 <!-- nexlayer:section agent-managed=build_history -->
 | Date | Status | Notes |
 |------|--------|-------|
-| 2026-06-24T17:25:25Z | analyzed | initial repo analysis |
-| 2026-06-24T17:33:56Z | success | deployed https://flamboyant-goshawk-fine-peak-discovery-assistant.cloud.nexlayer.ai |
+| 2026-06-24T21:21:15Z | analyzed | initial repo analysis |
+| 2026-06-24T21:28:34Z | success | deployed https://flamboyant-goshawk-discovery-assistant.cloud.nexlayer.ai |
 <!-- nexlayer:end -->
+
