@@ -62,7 +62,7 @@ Same origin for frontend + backend ⇒ no CORS, no absolute API URL, no build-ti
 ### 4.1 Backend — global `/api` prefix
 
 - In `backend/app/main.py`, introduce a single parent router `api_router = APIRouter(prefix="/api")`, include every existing sub-router into it (auth, clients, projects, data_sources, analyses, artifacts, settings, time_sessions, invoices, webhooks, dashboard, intake), then `app.include_router(api_router)`.
-- Move `/health` (and the root `/` info endpoint, if kept) under the prefix → `/api/health`. The compose healthcheck and entrypoint are updated to match.
+- Move `/health` (and the root `/` info endpoint, if kept) under the prefix → `/api/health`. Concrete edit point: the `docker-compose.yml` backend healthcheck currently hits `http://localhost:8000/health` and must change to `/api/health` (the entrypoint script itself does not reference `/health`).
 - The SSE streaming endpoint (`analyze/stream`) must inherit the prefix like every other route — verify it still streams behind the prefix.
 - Individual route files are **not** edited (they keep their explicit full paths); only `main.py` registration changes.
 - `CORS_ORIGINS` handling stays in place (harmless), but is unnecessary in the Nexlayer single-origin deployment.
@@ -79,7 +79,7 @@ Same origin for frontend + backend ⇒ no CORS, no absolute API URL, no build-ti
 - nginx config: serve hashed static assets with caching; **SPA fallback** `try_files $uri /index.html` so React Router deep links resolve.
 - `BASE_URL` in `frontend/src/api/client.ts` and `frontend/src/lib/api.ts` defaults to **`/api`** (relative, same origin) instead of `http://localhost:8000`.
 - Tests that hardcode `http://localhost:8000` (`frontend/src/tests/api/analyses.test.ts`, and the `BASE_URL` defaults) are updated to the new base.
-- **Local dev unchanged:** `docker-compose.yml` keeps the Vite dev server for the frontend; the Vite `server.proxy` is updated so `/api` proxies to `http://localhost:8000`, giving local same-origin parity with production.
+- **Local dev parity:** `docker-compose.yml` keeps the Vite dev server for the frontend. Because dev and prod must share the same `/api` base, this depends on the §4.1 prefix refactor: the dev frontend calls `/api/...`, the Vite `server.proxy` gains an `/api` rule pointing at `http://localhost:8000` (replacing the current `/auth`-only rule), and the dev backend serves `/api/*` exactly as in prod. The planner must keep the `/api` base consistent across dev proxy, prod, and tests.
 
 ### 4.4 `nexlayer.yaml`
 
@@ -124,6 +124,7 @@ application:
 
 Notes:
 - `STORAGE_ACCESS_KEY`/`STORAGE_SECRET_KEY` map to the MinIO root user/password and are supplied as secrets.
+- Keep `STORAGE_BUCKET_NAME` consistent across the manifest, the backend default in `storage_service.py`/`main.py` (`discovery-files`), and any test fixtures — a value mismatch silently breaks uploads.
 - `DATABASE_URL` uses the `postgresql://` scheme; `backend/app/db.py` already rewrites it to `postgresql+asyncpg://`.
 - Private GHCR images require `application.registryLogin` (registry/username/personalAccessToken) — added if the packages are not made public.
 
