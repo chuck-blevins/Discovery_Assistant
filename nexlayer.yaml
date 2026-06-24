@@ -1,0 +1,56 @@
+# Nexlayer deployment manifest. Four pods on one public domain:
+#   frontend (path /) + backend (path /api) share an origin, so CORS is
+#   intentionally NOT configured (the backend's CORS_ORIGINS default is unused).
+# Pods reach each other via Nexlayer internal DNS as <pod-name>.pod:<port>
+#   (e.g. postgres.pod:5432, minio.pod:9000). Verify this convention against
+#   current Nexlayer docs for your target platform before first deploy.
+# Set every <set-via-secret> value in Nexlayer's secret store — never commit real secrets.
+application:
+  name: discovery-app
+  pods:
+    - name: postgres
+      image: postgres:15
+      servicePorts:
+        - 5432
+      vars:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: <set-via-secret>
+        POSTGRES_DB: discovery_app
+      volumes:
+        - name: pg-data
+          size: 2Gi
+          mountPath: /var/lib/postgresql/data
+
+    - name: minio
+      image: minio/minio:latest
+      command: ["server", "/data", "--console-address", ":9001"]
+      servicePorts:
+        - 9000
+        - 9001
+      vars:
+        MINIO_ROOT_USER: minioadmin
+        MINIO_ROOT_PASSWORD: <set-via-secret>
+      volumes:
+        - name: minio-data
+          size: 5Gi
+          mountPath: /data
+
+    - name: backend
+      image: ghcr.io/chuck-blevins/discovery-backend:latest
+      path: /api
+      servicePorts:
+        - 8000
+      vars:
+        DATABASE_URL: postgresql://postgres:<set-via-secret>@postgres.pod:5432/discovery_app
+        STORAGE_ENDPOINT_URL: http://minio.pod:9000
+        STORAGE_BUCKET_NAME: discovery-files
+        STORAGE_ACCESS_KEY: minioadmin
+        STORAGE_SECRET_KEY: <set-via-secret>
+        SECRET_KEY: <set-via-secret>
+        CLAUDE_API_KEY: <set-via-secret>
+
+    - name: frontend
+      image: ghcr.io/chuck-blevins/discovery-frontend:latest
+      path: /
+      servicePorts:
+        - 80

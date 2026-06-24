@@ -1,6 +1,6 @@
 import { getAuthHeaders } from '@/api/client'
 
-export const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+export const BASE_URL = import.meta.env.VITE_API_URL ?? '/api'
 
 /** Thrown by api when response is not ok; carries status for 404 etc. */
 export class ApiError extends Error {

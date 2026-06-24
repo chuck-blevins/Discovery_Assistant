@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { listAnalyses, getAnalysis, runAnalysisStream } from '@/api/analyses'
 
 vi.mock('@/lib/api', () => ({
-  BASE_URL: 'http://localhost:8000',
+  BASE_URL: '/api',
   api: {
     get: vi.fn(),
   },

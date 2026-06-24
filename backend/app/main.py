@@ -6,28 +6,32 @@ registers routes, and sets up dependencies.
 
 APPLICATION STRUCTURE
 ====================
-FastAPI application with modular route organization:
+FastAPI application with modular route organization. Every feature router is
+composed under a single parent router with an `/api` prefix, then mounted on
+the app. This keeps the whole backend under `/api/*` so the frontend and
+backend can share one origin in production (same-origin, no CORS needed):
 
   app = FastAPI()
-  
-  # Register auth router
-  app.include_router(auth_router)
-  
-  # Can add more routers as features expand:
-  # app.include_router(posts_router)
-  # app.include_router(comments_router)
-  # etc.
+
+  api_router = APIRouter(prefix="/api")
+  api_router.include_router(auth_router)      # → /api/auth/...
+  api_router.include_router(clients_router)   # → /api/clients/...
+  # ...more feature routers...
+
+  app.include_router(api_router)
 
 ROUTERS
 =======
 Routers are sub-applications that group related endpoints:
-- Auth router: signup, login, validate, logout, health
-- Future: Queries router, Analytics router, etc.
+- Auth router: signup, login, validate, logout (→ /api/auth/...)
+- Clients, projects, data sources, analyses, artifacts, settings,
+  time sessions, invoices, webhooks, dashboard, intake (→ /api/...)
+- `/health` lives on the parent api_router, so it resolves at /api/health
 
 Benefits:
 - Code organization (each feature in separate file)
-- Prefix routes (/auth/signup, /auth/login, etc.)
-- Tags for OpenAPI documentation (Swagger UI)
+- Single `/api` prefix → same-origin frontend + backend deploy (no CORS)
+- Tags for OpenAPI documentation (Swagger UI at /api/docs)
 - Can apply middleware/dependencies to groups of routes
 
 MIDDLEWARE
@@ -67,7 +71,7 @@ if _tracing not in ("true", "1"):
 elif not (os.getenv("LANGSMITH_API_KEY") or "").strip():
     os.environ["LANGSMITH_TRACING"] = "false"
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.auth import router as auth_router
@@ -102,10 +106,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-  title="Discovery App API",
-  description="AI-powered discovery platform for validating startup assumptions",
-  version="0.1.0",
-  lifespan=lifespan,
+    title="Discovery App API",
+    description="AI-powered discovery platform for validating startup assumptions",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 # ============================================================================
@@ -137,44 +144,35 @@ app.add_middleware(
 # ROUTE REGISTRATION
 # ============================================================================
 
-# Include authentication routes
-# Routes will be: /auth/signup, /auth/login, /auth/validate, /auth/logout, /health
-app.include_router(auth_router)
+# Single parent router under /api — all sub-routers compose here so the
+# frontend and backend share one origin in production (no CORS needed).
+api_router = APIRouter(prefix="/api")
 
-# Include client management routes
-# Routes will be: /clients, /clients/{id}, /clients/{id}/archive
-app.include_router(clients_router)
+api_router.include_router(auth_router)
+api_router.include_router(clients_router)
+api_router.include_router(projects_router)
+api_router.include_router(data_sources_router)
+api_router.include_router(analyses_router)
+api_router.include_router(artifacts_router)
+api_router.include_router(settings_router)
+api_router.include_router(time_sessions_router)
+api_router.include_router(invoices_router)
+api_router.include_router(webhooks_router)
+api_router.include_router(dashboard_router)
+api_router.include_router(intake_router)
 
-# Include project management routes (uses explicit full paths — no prefix needed)
-# Routes: /clients/{id}/projects, /projects/{id}, /projects/{id}/archive
-app.include_router(projects_router)
 
-# Include data source routes (uses explicit full paths — no prefix needed)
-# Routes: /projects/{id}/data-sources/upload, /projects/{id}/data-sources/paste,
-#         /projects/{id}/data-sources, /data-sources/{id}/preview, /data-sources/{id}
-app.include_router(data_sources_router)
-
-# Include analysis routes (uses explicit full paths — no prefix needed)
-# Routes: /projects/{id}/analyze/stream, /projects/{id}/analyze,
-#         /projects/{id}/analyses, /analyses/{id}
-app.include_router(analyses_router)
-app.include_router(artifacts_router)
-app.include_router(settings_router)
-app.include_router(time_sessions_router)
-app.include_router(invoices_router)
-app.include_router(webhooks_router)
-app.include_router(dashboard_router)
-app.include_router(intake_router)
-
-# ============================================================================
-# ROOT ENDPOINT
-# ============================================================================
-
-@app.get("/health", response_model=HealthResponse, tags=["health"])
+@api_router.get("/health", response_model=HealthResponse, tags=["health"])
 async def health_check() -> HealthResponse:
     """Health check endpoint for Docker and monitoring. No auth required."""
     return HealthResponse(status="ok")
 
+
+app.include_router(api_router)
+
+# ============================================================================
+# ROOT ENDPOINT
+# ============================================================================
 
 @app.get("/", tags=["root"])
 async def read_root():
@@ -194,8 +192,8 @@ async def read_root():
     return {
         "message": "Discovery App API",
         "version": "0.1.0",
-        "docs": "/docs",
-        "redoc": "/redoc"
+        "docs": "/api/docs",
+        "redoc": "/api/redoc"
     }
 
 

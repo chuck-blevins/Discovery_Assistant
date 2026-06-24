@@ -89,7 +89,7 @@ class TestSignupHTTP:
         app.dependency_overrides[get_db] = _db_override()
         with TestClient(app) as client:
             resp = client.post(
-                "/auth/signup",
+                "/api/auth/signup",
                 json={"email": "new@example.com", "password": "Password123"},
             )
         assert resp.status_code == 201
@@ -104,7 +104,7 @@ class TestSignupHTTP:
         app.dependency_overrides[get_db] = _db_override()
         with TestClient(app) as client:
             resp = client.post(
-                "/auth/signup",
+                "/api/auth/signup",
                 json={"email": "User@Example.COM", "password": "Password123"},
             )
         assert resp.status_code == 201
@@ -116,7 +116,7 @@ class TestSignupHTTP:
         )
         with TestClient(app) as client:
             resp = client.post(
-                "/auth/signup",
+                "/api/auth/signup",
                 json={"email": "dupe@example.com", "password": "Password123"},
             )
         assert resp.status_code == 409
@@ -125,7 +125,7 @@ class TestSignupHTTP:
         app.dependency_overrides[get_db] = _db_override()
         with TestClient(app) as client:
             resp = client.post(
-                "/auth/signup",
+                "/api/auth/signup",
                 json={"email": "user@example.com", "password": "short"},
             )
         assert resp.status_code == 422
@@ -134,7 +134,7 @@ class TestSignupHTTP:
         app.dependency_overrides[get_db] = _db_override()
         with TestClient(app) as client:
             resp = client.post(
-                "/auth/signup",
+                "/api/auth/signup",
                 json={"email": "user@example.com", "password": "NoDigitsHere"},
             )
         assert resp.status_code == 422
@@ -143,7 +143,7 @@ class TestSignupHTTP:
         app.dependency_overrides[get_db] = _db_override()
         with TestClient(app) as client:
             resp = client.post(
-                "/auth/signup",
+                "/api/auth/signup",
                 json={"email": "notanemail", "password": "Password123"},
             )
         assert resp.status_code == 422
@@ -159,7 +159,7 @@ class TestLoginHTTP:
         app.dependency_overrides[get_db] = _db_override(execute_return=user)
         with TestClient(app) as client:
             resp = client.post(
-                "/auth/login",
+                "/api/auth/login",
                 json={"email": user.email, "password": "Password123"},
             )
         assert resp.status_code == 200
@@ -175,7 +175,7 @@ class TestLoginHTTP:
         app.dependency_overrides[get_db] = _db_override(execute_return=user)
         with TestClient(app) as client:
             resp = client.post(
-                "/auth/login",
+                "/api/auth/login",
                 json={"email": user.email, "password": "WrongPassword999"},
             )
         assert resp.status_code == 401
@@ -185,7 +185,7 @@ class TestLoginHTTP:
         app.dependency_overrides[get_db] = _db_override(execute_return=None)
         with TestClient(app) as client:
             resp = client.post(
-                "/auth/login",
+                "/api/auth/login",
                 json={"email": "nobody@example.com", "password": "Password123"},
             )
         assert resp.status_code == 401
@@ -197,14 +197,14 @@ class TestLoginHTTP:
         app.dependency_overrides[get_db] = _db_override(execute_return=user)
         with TestClient(app) as client:
             wrong_pass = client.post(
-                "/auth/login",
+                "/api/auth/login",
                 json={"email": user.email, "password": "WrongPassword999"},
             )
 
         app.dependency_overrides[get_db] = _db_override(execute_return=None)
         with TestClient(app) as client:
             no_user = client.post(
-                "/auth/login",
+                "/api/auth/login",
                 json={"email": "ghost@example.com", "password": "Password123"},
             )
 
@@ -222,7 +222,7 @@ class TestValidateHTTP:
         app.dependency_overrides[get_db] = _db_override(execute_return=user)
         with TestClient(app) as client:
             resp = client.get(
-                "/auth/validate",
+                "/api/auth/validate",
                 headers={"Authorization": f"Bearer {token}"},
             )
         assert resp.status_code == 200
@@ -234,20 +234,20 @@ class TestValidateHTTP:
         token = create_access_token(user.id, user.email)
         app.dependency_overrides[get_db] = _db_override(execute_return=user)
         with TestClient(app, cookies={"access_token": token}) as client:
-            resp = client.get("/auth/validate")
+            resp = client.get("/api/auth/validate")
         assert resp.status_code == 200
         assert resp.json()["email"] == user.email
 
     def test_missing_token_returns_401(self):
         with TestClient(app) as client:
-            resp = client.get("/auth/validate")
+            resp = client.get("/api/auth/validate")
         assert resp.status_code == 401
 
     def test_invalid_token_returns_401(self):
         app.dependency_overrides[get_db] = _db_override()
         with TestClient(app) as client:
             resp = client.get(
-                "/auth/validate",
+                "/api/auth/validate",
                 headers={"Authorization": "Bearer not.a.valid.token"},
             )
         assert resp.status_code == 401
@@ -265,7 +265,7 @@ class TestValidateHTTP:
         app.dependency_overrides[get_db] = _db_override()
         with TestClient(app) as client:
             resp = client.get(
-                "/auth/validate",
+                "/api/auth/validate",
                 headers={"Authorization": f"Bearer {expired_token}"},
             )
         assert resp.status_code == 401
@@ -278,31 +278,31 @@ class TestValidateHTTP:
 class TestLogoutHTTP:
     def test_logout_returns_200(self):
         with TestClient(app) as client:
-            resp = client.post("/auth/logout")
+            resp = client.post("/api/auth/logout")
         assert resp.status_code == 200
         assert resp.json()["message"] == "Logged out successfully"
 
     def test_logout_clears_access_token_cookie(self):
         with TestClient(app, cookies={"access_token": "sometoken"}) as client:
-            resp = client.post("/auth/logout")
+            resp = client.post("/api/auth/logout")
         assert resp.status_code == 200
         # After logout the cookie value should be empty/cleared
         assert resp.cookies.get("access_token", "") == ""
 
 
 # ---------------------------------------------------------------------------
-# GET /health  (AC6 — must be at root /health, not /auth/health)
+# GET /api/health  (AC6 — must be at /api/health, not /auth/health)
 # ---------------------------------------------------------------------------
 
 class TestHealthHTTP:
     def test_health_returns_200_ok(self):
         with TestClient(app) as client:
-            resp = client.get("/health")
+            resp = client.get("/api/health")
         assert resp.status_code == 200
         assert resp.json() == {"status": "ok"}
 
     def test_health_requires_no_auth(self):
         """No Authorization header — must still return 200."""
         with TestClient(app) as client:
-            resp = client.get("/health")
+            resp = client.get("/api/health")
         assert resp.status_code == 200

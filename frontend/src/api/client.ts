@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_URL ?? '/api'
 const TOKEN_KEY = 'discovery_access_token'
 
 /** In-memory token so redirect/navigate in same session has token before localStorage is read. */

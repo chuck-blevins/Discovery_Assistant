@@ -226,6 +226,70 @@ The current AI integration produces useful structured output across all four ana
 
 ---
 
+## Deploy to Nexlayer
+
+This project ships a `nexlayer.yaml` that provisions four pods: `postgres`, `minio`, `backend` (served at path `/api`), and `frontend` (served at path `/`).
+
+### 1. Build images via CI
+
+Pushing to `main` (or a `v*` tag) triggers `.github/workflows/build-images.yml`, which builds and pushes both images to GHCR tagged `latest` and the commit SHA:
+
+- `ghcr.io/chuck-blevins/discovery-backend`
+- `ghcr.io/chuck-blevins/discovery-frontend`
+
+You can also trigger the workflow manually from **Actions → Build & Push Images → Run workflow**.
+
+### 2. Configure secrets
+
+The `nexlayer.yaml` uses `<set-via-secret>` placeholders for sensitive values. Set these in Nexlayer's secret store — do not commit them:
+
+| Placeholder | Where used |
+| --- | --- |
+| `POSTGRES_PASSWORD` | `postgres` pod |
+| `MINIO_ROOT_PASSWORD` | `minio` pod |
+| `STORAGE_SECRET_KEY` | `backend` pod (MinIO access) |
+| `SECRET_KEY` | `backend` pod (JWT signing) |
+| `CLAUDE_API_KEY` | `backend` pod (Anthropic API) |
+| Password in `DATABASE_URL` | `backend` pod (`postgresql://postgres:<set-via-secret>@...`) |
+
+If the GHCR packages are private, add a `registryLogin` block to `nexlayer.yaml` with your GHCR credentials.
+
+If the owner or image names ever change, update the `image:` fields in `nexlayer.yaml` accordingly.
+
+### 3. Deploy
+
+```bash
+nexlayer deploy nexlayer.yaml
+```
+
+### 4. Verify
+
+After Nexlayer reports the deployment URL:
+
+```bash
+curl https://<your-domain>/api/health
+# Expected: {"status":"ok"}
+```
+
+Then open `https://<your-domain>/` — the SPA should render. Try a deep-link reload to confirm the frontend's nginx `try_files` fallback is working (no 404). Finally, run one authenticated flow (login → create client) and upload a file to confirm the database and MinIO are reachable.
+
+### Fallback: `/api/health` returns 404
+
+This means Nexlayer strips the matched `path` prefix (`/api`) before forwarding the request to the backend container. Fix:
+
+1. In `backend/app/main.py`, remove the explicit `/api` router prefix (use a prefixless parent router or register routes directly) and pass `root_path="/api"` to `FastAPI(...)`. Revert `docs_url`, `redoc_url`, and `openapi_url` to their defaults — `root_path` handles the mount automatically.
+2. Rebuild the backend image and redeploy.
+
+### Local development is unchanged
+
+```bash
+docker compose up --build
+```
+
+The Vite dev server proxies `/api` to the backend, and the compose healthcheck uses `/api/health`. No changes needed for local work.
+
+---
+
 ## Contributing
 
 This project is shared as a reference and example of AI-assisted application development. It is not formally open source — feel free to explore, fork, and adapt for your own use. Attribution is appreciated but not required.

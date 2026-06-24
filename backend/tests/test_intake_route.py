@@ -84,7 +84,7 @@ class TestIntakeRouteRegistration:
 
     def test_intake_router_in_app(self):
         paths = {r.path for r in app.routes}
-        assert "/intake-scope" in paths
+        assert "/api/intake-scope" in paths
 
     def test_router_has_intake_tag(self):
         from app.api.routes.intake import router
@@ -149,7 +149,7 @@ class TestIntakeScopeUnauthenticated:
         # No auth override set — real get_current_user will reject
         app.dependency_overrides[get_db] = _db_with_llm()
         with TestClient(app, raise_server_exceptions=False) as client:
-            resp = client.post("/intake-scope", json={"company_name": "Acme"})
+            resp = client.post("/api/intake-scope", json={"company_name": "Acme"})
         assert resp.status_code == 401
 
 
@@ -177,7 +177,7 @@ class TestIntakeScopeMissingApiKey:
             patch("app.api.routes.intake.settings_service.get_llm_settings", new=AsyncMock(return_value=_llm_settings(api_key_is_set=False))),
             TestClient(app) as client,
         ):
-            resp = client.post("/intake-scope", json={"company_name": "Acme"})
+            resp = client.post("/api/intake-scope", json={"company_name": "Acme"})
 
         assert resp.status_code == 422
         detail = resp.json()["detail"]
@@ -196,7 +196,7 @@ class TestIntakeScopeHappyPath:
             TestClient(app) as client,
         ):
             resp = client.post(
-                "/intake-scope",
+                "/api/intake-scope",
                 json={"company_name": "Acme", "context": "B2B SaaS", "win_definition": "Grow ARR"},
             )
 
@@ -219,7 +219,7 @@ class TestIntakeScopeClaudeMalformedJson:
             patch("app.api.routes.intake.claude_service.run_intake_scope", new=AsyncMock(side_effect=ValueError("missing required keys: {'engagement_summary'}"))),
             TestClient(app) as client,
         ):
-            resp = client.post("/intake-scope", json={"company_name": "Acme"})
+            resp = client.post("/api/intake-scope", json={"company_name": "Acme"})
 
         assert resp.status_code == 500
         assert "malformed" in resp.json()["detail"].lower()
