@@ -6,28 +6,32 @@ registers routes, and sets up dependencies.
 
 APPLICATION STRUCTURE
 ====================
-FastAPI application with modular route organization:
+FastAPI application with modular route organization. Every feature router is
+composed under a single parent router with an `/api` prefix, then mounted on
+the app. This keeps the whole backend under `/api/*` so the frontend and
+backend can share one origin in production (same-origin, no CORS needed):
 
   app = FastAPI()
-  
-  # Register auth router
-  app.include_router(auth_router)
-  
-  # Can add more routers as features expand:
-  # app.include_router(posts_router)
-  # app.include_router(comments_router)
-  # etc.
+
+  api_router = APIRouter(prefix="/api")
+  api_router.include_router(auth_router)      # → /api/auth/...
+  api_router.include_router(clients_router)   # → /api/clients/...
+  # ...more feature routers...
+
+  app.include_router(api_router)
 
 ROUTERS
 =======
 Routers are sub-applications that group related endpoints:
-- Auth router: signup, login, validate, logout, health
-- Future: Queries router, Analytics router, etc.
+- Auth router: signup, login, validate, logout (→ /api/auth/...)
+- Clients, projects, data sources, analyses, artifacts, settings,
+  time sessions, invoices, webhooks, dashboard, intake (→ /api/...)
+- `/health` lives on the parent api_router, so it resolves at /api/health
 
 Benefits:
 - Code organization (each feature in separate file)
-- Prefix routes (/auth/signup, /auth/login, etc.)
-- Tags for OpenAPI documentation (Swagger UI)
+- Single `/api` prefix → same-origin frontend + backend deploy (no CORS)
+- Tags for OpenAPI documentation (Swagger UI at /api/docs)
 - Can apply middleware/dependencies to groups of routes
 
 MIDDLEWARE
