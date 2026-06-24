@@ -1,0 +1,104 @@
+{
+  "oobo_version": "0.1.14",
+  "commit_hash": "f623ac7443e7a1f2dfd42b80f4cf699b87187cfb",
+  "branch": "nexlayer-reconcile",
+  "author": "chuck-blevins <chuck@chuckblevins.com>",
+  "author_type": "agent",
+  "contributors": [
+    {
+      "name": "chuck-blevins <chuck@chuckblevins.com>",
+      "role": "human"
+    },
+    {
+      "name": "claude",
+      "role": "agent"
+    }
+  ],
+  "committed_at": 1782335817,
+  "message": "feat: reconcile Nexlayer config to native build conventions",
+  "files_changed": [
+    ".github/workflows/build-images.yml",
+    "NEXLAYER.md",
+    "README.md",
+    "backend/Dockerfile",
+    "docker-compose.yml",
+    "frontend/Dockerfile",
+    "frontend/Dockerfile.dev",
+    "frontend/Dockerfile.prod",
+    "nexlayer.skills",
+    "nexlayer.yaml"
+  ],
+  "added": 556,
+  "deleted": 121,
+  "file_changes": [
+    {
+      "path": ".github/workflows/build-images.yml",
+      "added": 0,
+      "deleted": 46,
+      "attribution": "human"
+    },
+    {
+      "path": "NEXLAYER.md",
+      "added": 234,
+      "deleted": 0,
+      "attribution": "human"
+    },
+    {
+      "path": "README.md",
+      "added": 16,
+      "deleted": 29,
+      "attribution": "human"
+    },
+    {
+      "path": "backend/Dockerfile",
+      "added": 1,
+      "deleted": 1,
+      "attribution": "human"
+    },
+    {
+      "path": "docker-compose.yml",
+      "added": 4,
+      "deleted": 2,
+      "attribution": "human"
+    },
+    {
+      "path": "frontend/Dockerfile",
+      "added": 8,
+      "deleted": 11,
+      "attribution": "human"
+    },
+    {
+      "path": "frontend/Dockerfile.dev",
+      "added": 17,
+      "deleted": 0,
+      "attribution": "human"
+    },
+    {
+      "path": "frontend/Dockerfile.prod",
+      "added": 0,
+      "deleted": 14,
+      "attribution": "human"
+    },
+    {
+      "path": "nexlayer.skills",
+      "added": 247,
+      "deleted": 0,
+      "attribution": "human"
+    },
+    {
+      "path": "nexlayer.yaml",
+      "added": 29,
+      "deleted": 18,
+      "attribution": "human"
+    }
+  ],
+  "ai_added": 0,
+  "ai_deleted": 0,
+  "human_added": 556,
+  "human_deleted": 121,
+  "ai_percentage": 0.0,
+  "session_ids": [
+    "7a2b284d-bbb8-4e91-a4bf-ab671fae9750"
+  ],
+  "transparency_mode": "off"
+}
