@@ -1,0 +1,55 @@
+{
+  "oobo_version": "0.1.14",
+  "commit_hash": "220ca6c356df6d7271ee1021531346b4cbf2dbac",
+  "branch": "nexlayer-deploy",
+  "author": "chuck-blevins <chuck@chuckblevins.com>",
+  "author_type": "agent",
+  "contributors": [
+    {
+      "name": "chuck-blevins <chuck@chuckblevins.com>",
+      "role": "human"
+    },
+    {
+      "name": "claude",
+      "role": "agent"
+    }
+  ],
+  "committed_at": 1782334027,
+  "message": "feat(frontend): default API base to /api for same-origin deploy",
+  "files_changed": [
+    "frontend/src/api/client.ts",
+    "frontend/src/lib/api.ts",
+    "frontend/src/tests/api/analyses.test.ts"
+  ],
+  "added": 3,
+  "deleted": 3,
+  "file_changes": [
+    {
+      "path": "frontend/src/api/client.ts",
+      "added": 1,
+      "deleted": 1,
+      "attribution": "human"
+    },
+    {
+      "path": "frontend/src/lib/api.ts",
+      "added": 1,
+      "deleted": 1,
+      "attribution": "human"
+    },
+    {
+      "path": "frontend/src/tests/api/analyses.test.ts",
+      "added": 1,
+      "deleted": 1,
+      "attribution": "human"
+    }
+  ],
+  "ai_added": 0,
+  "ai_deleted": 0,
+  "human_added": 3,
+  "human_deleted": 3,
+  "ai_percentage": 0.0,
+  "session_ids": [
+    "7a2b284d-bbb8-4e91-a4bf-ab671fae9750"
+  ],
+  "transparency_mode": "off"
+}
