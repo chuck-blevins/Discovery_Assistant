@@ -1,17 +1,14 @@
-# Development: run Vite dev server so frontend starts with docker compose.
-# Not for production (use build + nginx for that).
-# Use slim (Debian) instead of Alpine so esbuild native bindings run reliably; Alpine can cause "The service was stopped".
-FROM node:25-slim
-
+# Build stage
+FROM mirror.gcr.io/library/node:25-slim AS build
 WORKDIR /app
-
 COPY package.json package-lock.json* ./
 RUN npm ci
-
 COPY . .
-EXPOSE 5173
-
-# Give Node more heap so Vite/esbuild don't get killed during startup in the container
 ENV NODE_OPTIONS="--max-old-space-size=1024"
+RUN npm run build
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Runtime stage
+FROM mirror.gcr.io/library/nginx:1.27-alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
