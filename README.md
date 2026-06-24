@@ -228,41 +228,28 @@ The current AI integration produces useful structured output across all four ana
 
 ## Deploy to Nexlayer
 
-This project ships a `nexlayer.yaml` that provisions four pods: `postgres`, `minio`, `backend` (served at path `/api`), and `frontend` (served at path `/`).
+This project ships a `nexlayer.yaml` that provisions four pods: `postgres`, `minio`, `backend` (served at path `/api`), and `frontend` (served at path `/`). Nexlayer builds and deploys the app images itself — see `NEXLAYER.md` (project context) and `nexlayer.skills` (platform reference) for full detail.
 
-### 1. Build images via CI
+### 1. Build & deploy (automatic)
 
-Pushing to `main` (or a `v*` tag) triggers `.github/workflows/build-images.yml`, which builds and pushes both images to GHCR tagged `latest` and the commit SHA:
+Nexlayer builds each app pod's image from its Dockerfile on its build cluster and patches it into the `# filled by pipeline` slots — no GHCR or external CI is needed. Pushing to the deploy branch (`main`) triggers a rebuild and redeploy of the affected pods.
 
-- `ghcr.io/chuck-blevins/discovery-backend`
-- `ghcr.io/chuck-blevins/discovery-frontend`
-
-You can also trigger the workflow manually from **Actions → Build & Push Images → Run workflow**.
+- **backend** → built from `backend/Dockerfile` (FastAPI/uvicorn, port 8000)
+- **frontend** → built from `frontend/Dockerfile` (production nginx serving the SPA, port 80). The dev server lives in `frontend/Dockerfile.dev` and is used only by `docker compose`.
 
 ### 2. Configure secrets
 
-The `nexlayer.yaml` uses `<set-via-secret>` placeholders for sensitive values. Set these in Nexlayer's secret store — do not commit them:
+Set these as encrypted vars in the **Nexlayer dashboard** (do not commit them):
 
-| Placeholder | Where used |
-| --- | --- |
-| `POSTGRES_PASSWORD` | `postgres` pod |
-| `MINIO_ROOT_PASSWORD` | `minio` pod |
-| `STORAGE_SECRET_KEY` | `backend` pod (MinIO access) |
-| `SECRET_KEY` | `backend` pod (JWT signing) |
-| `CLAUDE_API_KEY` | `backend` pod (Anthropic API) |
-| Password in `DATABASE_URL` | `backend` pod (`postgresql://postgres:<set-via-secret>@...`) |
+| Secret | Pod | Purpose |
+| --- | --- | --- |
+| `SECRET_KEY` | `backend` | JWT signing |
+| `CLAUDE_API_KEY` | `backend` | Anthropic API (analysis features) |
+| `STORAGE_SECRET_KEY` | `backend` | MinIO/S3 secret (must match the MinIO password) |
 
-If the GHCR packages are private, add a `registryLogin` block to `nexlayer.yaml` with your GHCR credentials.
+The internal `postgres`/`minio` credentials in `nexlayer.yaml` are cluster-internal defaults; override them in the dashboard for production. Inter-pod references use `${podName:port}` (e.g. `${postgres:5432}`); if a deploy can't resolve them, switch to the `<podName>.pod:<port>` form documented in `nexlayer.skills`.
 
-If the owner or image names ever change, update the `image:` fields in `nexlayer.yaml` accordingly.
-
-### 3. Deploy
-
-```bash
-nexlayer deploy nexlayer.yaml
-```
-
-### 4. Verify
+### 3. Verify
 
 After Nexlayer reports the deployment URL:
 
@@ -271,14 +258,14 @@ curl https://<your-domain>/api/health
 # Expected: {"status":"ok"}
 ```
 
-Then open `https://<your-domain>/` — the SPA should render. Try a deep-link reload to confirm the frontend's nginx `try_files` fallback is working (no 404). Finally, run one authenticated flow (login → create client) and upload a file to confirm the database and MinIO are reachable.
+Then open `https://<your-domain>/` — the SPA should render. Try a deep-link reload to confirm the frontend's nginx `try_files` fallback is working (no 404). Finally, run one authenticated flow (login → create client) and **upload a file** to confirm the database and MinIO are reachable.
 
 ### Fallback: `/api/health` returns 404
 
 This means Nexlayer strips the matched `path` prefix (`/api`) before forwarding the request to the backend container. Fix:
 
 1. In `backend/app/main.py`, remove the explicit `/api` router prefix (use a prefixless parent router or register routes directly) and pass `root_path="/api"` to `FastAPI(...)`. Revert `docs_url`, `redoc_url`, and `openapi_url` to their defaults — `root_path` handles the mount automatically.
-2. Rebuild the backend image and redeploy.
+2. Push to `main` — Nexlayer rebuilds and redeploys.
 
 ### Local development is unchanged
 
@@ -286,7 +273,7 @@ This means Nexlayer strips the matched `path` prefix (`/api`) before forwarding 
 docker compose up --build
 ```
 
-The Vite dev server proxies `/api` to the backend, and the compose healthcheck uses `/api/health`. No changes needed for local work.
+The Vite dev server (`frontend/Dockerfile.dev`) proxies `/api` to the backend, and the compose healthcheck uses `/api/health`. No changes needed for local work.
 
 ---
 
