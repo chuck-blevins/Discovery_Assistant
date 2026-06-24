@@ -1,0 +1,41 @@
+{
+  "oobo_version": "0.1.14",
+  "commit_hash": "83302ce0b1b68f927b5628e7574971fc58d80fb6",
+  "branch": "nexlayer-deploy",
+  "author": "chuck-blevins <chuck@chuckblevins.com>",
+  "author_type": "agent",
+  "contributors": [
+    {
+      "name": "chuck-blevins <chuck@chuckblevins.com>",
+      "role": "human"
+    },
+    {
+      "name": "claude",
+      "role": "agent"
+    }
+  ],
+  "committed_at": 1782324773,
+  "message": "docs: Nexlayer deployment design spec",
+  "files_changed": [
+    "docs/superpowers/specs/2026-06-24-nexlayer-deployment-design.md"
+  ],
+  "added": 178,
+  "deleted": 0,
+  "file_changes": [
+    {
+      "path": "docs/superpowers/specs/2026-06-24-nexlayer-deployment-design.md",
+      "added": 178,
+      "deleted": 0,
+      "attribution": "human"
+    }
+  ],
+  "ai_added": 0,
+  "ai_deleted": 0,
+  "human_added": 178,
+  "human_deleted": 0,
+  "ai_percentage": 0.0,
+  "session_ids": [
+    "7a2b284d-bbb8-4e91-a4bf-ab671fae9750"
+  ],
+  "transparency_mode": "off"
+}
