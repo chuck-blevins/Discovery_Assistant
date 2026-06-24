@@ -87,7 +87,7 @@ class TestAnalysisTypesRouteRegistration:
 
     def test_analysis_types_route_in_app(self):
         paths = {r.path for r in app.routes}
-        assert "/settings/analysis-types" in paths
+        assert "/api/settings/analysis-types" in paths
 
 
 # ============================================================================
@@ -97,7 +97,7 @@ class TestAnalysisTypesRouteRegistration:
 class TestAnalysisTypesUnauthenticated:
     def test_unauthenticated_returns_401(self):
         with TestClient(app, raise_server_exceptions=False) as client:
-            resp = client.get("/settings/analysis-types")
+            resp = client.get("/api/settings/analysis-types")
         assert resp.status_code == 401
 
 
@@ -105,20 +105,20 @@ class TestAnalysisTypesAuthenticated:
     def test_returns_200(self):
         app.dependency_overrides[get_current_user] = lambda: _make_user()
         with TestClient(app) as client:
-            resp = client.get("/settings/analysis-types")
+            resp = client.get("/api/settings/analysis-types")
         assert resp.status_code == 200
 
     def test_client_intake_in_list(self):
         app.dependency_overrides[get_current_user] = lambda: _make_user()
         with TestClient(app) as client:
-            resp = client.get("/settings/analysis-types")
+            resp = client.get("/api/settings/analysis-types")
         values = [t["value"] for t in resp.json()]
         assert "client_intake" in values
 
     def test_each_type_has_value_label_description(self):
         app.dependency_overrides[get_current_user] = lambda: _make_user()
         with TestClient(app) as client:
-            resp = client.get("/settings/analysis-types")
+            resp = client.get("/api/settings/analysis-types")
         for item in resp.json():
             assert "value" in item
             assert "label" in item
@@ -128,7 +128,7 @@ class TestAnalysisTypesAuthenticated:
     def test_client_intake_description_mentions_intake(self):
         app.dependency_overrides[get_current_user] = lambda: _make_user()
         with TestClient(app) as client:
-            resp = client.get("/settings/analysis-types")
+            resp = client.get("/api/settings/analysis-types")
         intake = next((t for t in resp.json() if t["value"] == "client_intake"), None)
         assert intake is not None
         assert "intake" in intake["description"].lower() or "wizard" in intake["description"].lower()

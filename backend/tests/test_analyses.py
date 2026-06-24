@@ -243,16 +243,16 @@ class TestAnalysesRouterInApp:
 
     def test_stream_route_in_app(self):
         paths = self._get_app_route_paths()
-        assert "/projects/{project_id}/analyze/stream" in paths
+        assert "/api/projects/{project_id}/analyze/stream" in paths
 
     def test_analyze_route_in_app(self):
         paths = self._get_app_route_paths()
-        assert "/projects/{project_id}/analyze" in paths
+        assert "/api/projects/{project_id}/analyze" in paths
 
     def test_list_analyses_route_in_app(self):
         paths = self._get_app_route_paths()
-        assert "/projects/{project_id}/analyses" in paths
+        assert "/api/projects/{project_id}/analyses" in paths
 
     def test_get_analysis_route_in_app(self):
         paths = self._get_app_route_paths()
-        assert "/analyses/{analysis_id}" in paths
+        assert "/api/analyses/{analysis_id}" in paths
