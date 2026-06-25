@@ -1,0 +1,58 @@
+{
+  "oobo_version": "0.1.14",
+  "commit_hash": "6328d00ddeca0509e7ce2faab4c8d88b7fc04f50",
+  "branch": "nexlayer-minio-deploy",
+  "author": "chuck-blevins <chuck@chuckblevins.com>",
+  "author_type": "agent",
+  "contributors": [
+    {
+      "name": "chuck-blevins <chuck@chuckblevins.com>",
+      "role": "human"
+    },
+    {
+      "name": "claude",
+      "role": "agent"
+    }
+  ],
+  "committed_at": 1782418920,
+  "message": "fix(nexlayer): deploy full stack to MCP — async DB URL + CMD-baked MinIO",
+  "files_changed": [
+    "NEXLAYER.md",
+    "deploy/minio/Dockerfile",
+    "nexlayer.yaml"
+  ],
+  "added": 67,
+  "deleted": 24,
+  "file_changes": [
+    {
+      "path": "NEXLAYER.md",
+      "added": 25,
+      "deleted": 5,
+      "attribution": "ai",
+      "agent": "claude"
+    },
+    {
+      "path": "deploy/minio/Dockerfile",
+      "added": 16,
+      "deleted": 0,
+      "attribution": "ai",
+      "agent": "claude"
+    },
+    {
+      "path": "nexlayer.yaml",
+      "added": 26,
+      "deleted": 19,
+      "attribution": "ai",
+      "agent": "claude"
+    }
+  ],
+  "ai_added": 67,
+  "ai_deleted": 24,
+  "human_added": 0,
+  "human_deleted": 0,
+  "ai_percentage": 100.0,
+  "session_ids": [
+    "3bdb8b79-ec82-4d84-aed3-e45300bcde83"
+  ],
+  "transparency_mode": "off"
+}
