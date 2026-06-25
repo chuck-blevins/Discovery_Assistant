@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { AlertTriangle } from 'lucide-react'
 import { ClientList } from '@/components/app/clients/ClientList'
 import { useRevenueDashboard } from '@/hooks/useInvoices'
+import { useClients } from '@/hooks/useClients'
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
@@ -73,9 +75,65 @@ function RevenueDashboard() {
   )
 }
 
+const STALE_DAYS = 21
+
+function AttentionQueue() {
+  const { data: clients = [] } = useClients(false)
+  const { data: revenue } = useRevenueDashboard()
+
+  const now = Date.now()
+  const staleMs = STALE_DAYS * 24 * 60 * 60 * 1000
+
+  const staleClients = clients.filter((c) => {
+    if (c.status !== 'active') return false
+    if (c.engagement_status == null) return false
+    return now - new Date(c.updated_at).getTime() > staleMs
+  })
+
+  const overdueAmount = revenue?.outstanding_aging?.['60_plus_days'] ?? 0
+
+  if (staleClients.length === 0 && overdueAmount === 0) return null
+
+  return (
+    <div className="mb-6 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800 p-4 space-y-2">
+      <div className="flex items-center gap-2 mb-1">
+        <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400 shrink-0" />
+        <p className="text-xs font-semibold text-orange-800 dark:text-orange-300 uppercase tracking-wide">
+          Needs Attention
+        </p>
+      </div>
+      {overdueAmount > 0 && (
+        <p className="text-sm text-orange-800 dark:text-orange-200">
+          {formatCurrency(overdueAmount)} in invoices overdue 60+ days
+        </p>
+      )}
+      {staleClients.length > 0 && (
+        <div>
+          <p className="text-xs text-orange-700 dark:text-orange-400 mb-1">
+            No activity in {STALE_DAYS}+ days:
+          </p>
+          <ul className="space-y-0.5">
+            {staleClients.map((c) => (
+              <li key={c.id}>
+                <Link
+                  to={`/${c.id}`}
+                  className="text-sm text-orange-900 dark:text-orange-200 hover:underline font-medium"
+                >
+                  {c.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   return (
     <>
+      <AttentionQueue />
       <RevenueDashboard />
       <ClientList />
     </>

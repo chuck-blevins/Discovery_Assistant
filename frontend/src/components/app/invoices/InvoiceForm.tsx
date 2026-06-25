@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { getStripeCatalog } from '@/api/settings'
-import type { InvoiceLineItemCreate } from '@/types/api'
+import type { InvoiceLineItemCreate, TimeSessionResponse } from '@/types/api'
 
 interface LineItemDraft {
   description: string
@@ -16,17 +16,20 @@ interface Props {
   onSubmit: (data: { due_date?: string; notes?: string; line_items: InvoiceLineItemCreate[] }) => void
   isPending: boolean
   onCancel: () => void
+  suggestedSessions?: TimeSessionResponse[]
 }
 
 function emptyLine(): LineItemDraft {
   return { description: '', quantity: '1', unit_price_usd: '' }
 }
 
-export function InvoiceForm({ onSubmit, isPending, onCancel }: Props) {
+export function InvoiceForm({ onSubmit, isPending, onCancel, suggestedSessions = [] }: Props) {
   const [dueDate, setDueDate] = useState('')
   const [notes, setNotes] = useState('')
   const [lines, setLines] = useState<LineItemDraft[]>([emptyLine()])
   const [catalogOpen, setCatalogOpen] = useState<number | null>(null)
+  const [sessionImportOpen, setSessionImportOpen] = useState(suggestedSessions.length > 0)
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set())
 
   const { data: catalog = [] } = useQuery({
     queryKey: ['settings', 'stripe', 'catalog'],
@@ -56,6 +59,32 @@ export function InvoiceForm({ onSubmit, isPending, onCancel }: Props) {
     setLines((prev) => prev.filter((_, i) => i !== index))
   }
 
+  function toggleSession(id: string) {
+    setSelectedSessionIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function importSessions() {
+    const toAdd = suggestedSessions.filter((s) => selectedSessionIds.has(s.id))
+    if (toAdd.length === 0) return
+    const newLines: LineItemDraft[] = toAdd.map((s) => {
+      const dateStr = new Date(s.session_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+      const desc = s.description ? `${dateStr} — ${s.description}` : `Consulting — ${dateStr}`
+      return { description: desc, quantity: String(s.hours), unit_price_usd: '' }
+    })
+    setLines((prev) => {
+      // Replace the single empty starter line if untouched
+      const hasContent = prev.some((l) => l.description.trim() || l.unit_price_usd)
+      return hasContent ? [...prev, ...newLines] : newLines
+    })
+    setSelectedSessionIds(new Set())
+    setSessionImportOpen(false)
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const validLines = lines.filter((l) => l.description.trim() && l.unit_price_usd)
@@ -81,6 +110,53 @@ export function InvoiceForm({ onSubmit, isPending, onCancel }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Import from time log */}
+      {suggestedSessions.length > 0 && (
+        <div className="rounded-md border bg-muted/20 p-2 space-y-2">
+          <button
+            type="button"
+            onClick={() => setSessionImportOpen((o) => !o)}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground w-full text-left"
+          >
+            {sessionImportOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            <Clock className="h-3.5 w-3.5" />
+            Import from time log ({suggestedSessions.length} session{suggestedSessions.length !== 1 ? 's' : ''})
+          </button>
+          {sessionImportOpen && (
+            <div className="space-y-1.5 pt-1">
+              {suggestedSessions.map((s) => {
+                const dateStr = new Date(s.session_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                const label = s.description ? `${dateStr} — ${s.description}` : `${dateStr}`
+                return (
+                  <label key={s.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedSessionIds.has(s.id)}
+                      onChange={() => toggleSession(s.id)}
+                      className="rounded border-zinc-300"
+                    />
+                    <span className="flex-1 truncate">{label}</span>
+                    <span className="shrink-0 text-muted-foreground">{s.hours}h</span>
+                  </label>
+                )
+              })}
+              <div className="flex justify-end pt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={selectedSessionIds.size === 0}
+                  onClick={importSessions}
+                  className="h-6 text-xs"
+                >
+                  Add {selectedSessionIds.size > 0 ? selectedSessionIds.size : ''} to invoice
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Line items */}
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Line Items</p>

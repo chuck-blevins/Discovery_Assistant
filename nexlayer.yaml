@@ -1,0 +1,67 @@
+# Nexlayer deployment manifest — four pods on one public domain.
+#
+# Topology:
+#   frontend (path /)  — nginx serving the production SPA build
+#   backend  (path /api) — FastAPI; same origin as the frontend, so NO CORS needed
+#   postgres — database (persistent volume)
+#   minio    — S3-compatible object storage (persistent volume); the backend
+#              requires this for file uploads (see app/services/storage_service.py)
+#
+# Nexlayer conventions:
+#   - App images (frontend/backend) are built by Nexlayer's pipeline from each
+#     service's Dockerfile and patched in where you see "# filled by pipeline".
+#   - Third-party images use the mirror.gcr.io mirror to avoid Docker Hub rate limits.
+#   - Inter-pod references use ${podName:port} (resolves to that pod's host:port).
+#     If a deploy can't resolve these, the documented alternative form is
+#     <podName>.pod:<port> (see nexlayer.skills) — swap if needed.
+#   - SECRET_KEY, CLAUDE_API_KEY, and STORAGE_SECRET_KEY should be set as encrypted
+#     vars in the Nexlayer dashboard, NOT committed here. The internal postgres/minio
+#     credentials below are cluster-internal only.
+application:
+  name: discovery-app
+  pods:
+    - name: postgres
+      image: mirror.gcr.io/library/postgres:15
+      servicePorts:
+        - 5432
+      vars:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: discovery_app
+      volumes:
+        - name: pg-data
+          size: 2Gi
+          mountPath: /var/lib/postgresql/data
+
+    - name: minio
+      image: mirror.gcr.io/minio/minio:latest
+      command: ["server", "/data", "--console-address", ":9001"]
+      servicePorts:
+        - 9000
+        - 9001
+      vars:
+        MINIO_ROOT_USER: minioadmin
+        MINIO_ROOT_PASSWORD: minioadmin
+      volumes:
+        - name: minio-data
+          size: 5Gi
+          mountPath: /data
+
+    - name: backend
+      image: "# filled by pipeline:backend"
+      path: /api
+      servicePorts:
+        - 8000
+      vars:
+        DATABASE_URL: postgresql://postgres:postgres@${postgres:5432}/discovery_app
+        STORAGE_ENDPOINT_URL: http://${minio:9000}
+        STORAGE_BUCKET_NAME: discovery-files
+        STORAGE_ACCESS_KEY: minioadmin
+        STORAGE_SECRET_KEY: minioadmin
+        # SECRET_KEY and CLAUDE_API_KEY: set as encrypted vars in the Nexlayer dashboard.
+
+    - name: frontend
+      image: "# filled by pipeline:frontend"
+      path: /
+      servicePorts:
+        - 80

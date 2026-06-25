@@ -100,3 +100,23 @@ class ProjectResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     archived_at: Optional[datetime] = None
+
+
+class ProjectNoteCreate(BaseModel):
+    content: str
+
+    @field_validator("content")
+    @classmethod
+    def content_not_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("content must not be empty")
+        return v.strip()
+
+
+class ProjectNoteResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    project_id: uuid.UUID
+    content: str
+    created_at: datetime

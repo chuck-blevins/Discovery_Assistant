@@ -14,6 +14,7 @@ vi.mock('@/api/clients', () => ({
 
 vi.mock('@/api/projects', () => ({
   createProject: vi.fn(),
+  seedIcp: vi.fn(),
 }))
 
 const mockNavigate = vi.fn()
@@ -249,7 +250,8 @@ describe('ClientIntakeWizard — Step 3 Confirm', () => {
       })
     })
     expect(vi.mocked(clientsApi.createClient)).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(projectsApi.createProject)).toHaveBeenCalledTimes(1)
+    // Discovery project + ICP Research project (seeded from icp_hypothesis)
+    expect(vi.mocked(projectsApi.createProject)).toHaveBeenCalledTimes(2)
   })
 
   it('client creation failure → error shown, project API not called', async () => {
@@ -275,6 +277,7 @@ describe('ClientIntakeWizard — Step 3 Confirm', () => {
 
     // Retry button shown; client was created so createClient should not be called again
     vi.mocked(clientsApi.createClient).mockClear()
+    vi.mocked(projectsApi.createProject).mockClear()
     vi.mocked(projectsApi.createProject).mockResolvedValue(mockProject)
     fireEvent.click(screen.getByRole('button', { name: /retry project/i }))
 
@@ -282,6 +285,7 @@ describe('ClientIntakeWizard — Step 3 Confirm', () => {
       expect(mockNavigate).toHaveBeenCalled()
     })
     expect(vi.mocked(clientsApi.createClient)).not.toHaveBeenCalled()
+    // Discovery project + ICP Research project (2 calls after retry)
     expect(vi.mocked(projectsApi.createProject)).toHaveBeenCalledTimes(2)
   })
 })

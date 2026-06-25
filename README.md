@@ -226,6 +226,57 @@ The current AI integration produces useful structured output across all four ana
 
 ---
 
+## Deploy to Nexlayer
+
+This project ships a `nexlayer.yaml` that provisions four pods: `postgres`, `minio`, `backend` (served at path `/api`), and `frontend` (served at path `/`). Nexlayer builds and deploys the app images itself — see `NEXLAYER.md` (project context) and `nexlayer.skills` (platform reference) for full detail.
+
+### 1. Build & deploy (automatic)
+
+Nexlayer builds each app pod's image from its Dockerfile on its build cluster and patches it into the `# filled by pipeline` slots — no GHCR or external CI is needed. Pushing to the deploy branch (`main`) triggers a rebuild and redeploy of the affected pods.
+
+- **backend** → built from `backend/Dockerfile` (FastAPI/uvicorn, port 8000)
+- **frontend** → built from `frontend/Dockerfile` (production nginx serving the SPA, port 80). The dev server lives in `frontend/Dockerfile.dev` and is used only by `docker compose`.
+
+### 2. Configure secrets
+
+Set these as encrypted vars in the **Nexlayer dashboard** (do not commit them):
+
+| Secret | Pod | Purpose |
+| --- | --- | --- |
+| `SECRET_KEY` | `backend` | JWT signing |
+| `CLAUDE_API_KEY` | `backend` | Anthropic API (analysis features) |
+| `STORAGE_SECRET_KEY` | `backend` | MinIO/S3 secret (must match the MinIO password) |
+
+The internal `postgres`/`minio` credentials in `nexlayer.yaml` are cluster-internal defaults; override them in the dashboard for production. Inter-pod references use `${podName:port}` (e.g. `${postgres:5432}`); if a deploy can't resolve them, switch to the `<podName>.pod:<port>` form documented in `nexlayer.skills`.
+
+### 3. Verify
+
+After Nexlayer reports the deployment URL:
+
+```bash
+curl https://<your-domain>/api/health
+# Expected: {"status":"ok"}
+```
+
+Then open `https://<your-domain>/` — the SPA should render. Try a deep-link reload to confirm the frontend's nginx `try_files` fallback is working (no 404). Finally, run one authenticated flow (login → create client) and **upload a file** to confirm the database and MinIO are reachable.
+
+### Fallback: `/api/health` returns 404
+
+This means Nexlayer strips the matched `path` prefix (`/api`) before forwarding the request to the backend container. Fix:
+
+1. In `backend/app/main.py`, remove the explicit `/api` router prefix (use a prefixless parent router or register routes directly) and pass `root_path="/api"` to `FastAPI(...)`. Revert `docs_url`, `redoc_url`, and `openapi_url` to their defaults — `root_path` handles the mount automatically.
+2. Push to `main` — Nexlayer rebuilds and redeploys.
+
+### Local development is unchanged
+
+```bash
+docker compose up --build
+```
+
+The Vite dev server (`frontend/Dockerfile.dev`) proxies `/api` to the backend, and the compose healthcheck uses `/api/health`. No changes needed for local work.
+
+---
+
 ## Contributing
 
 This project is shared as a reference and example of AI-assisted application development. It is not formally open source — feel free to explore, fork, and adapt for your own use. Attribution is appreciated but not required.

@@ -1,5 +1,5 @@
 import { api } from '@/lib/api'
-import type { ProjectCreate, ProjectResponse, ProjectUpdate } from '@/types/api'
+import type { IcpResponse, ProjectCreate, ProjectNoteResponse, ProjectResponse, ProjectUpdate } from '@/types/api'
 
 export async function listProjects(
   clientId: string,
@@ -33,4 +33,20 @@ export async function archiveProject(id: string): Promise<ProjectResponse> {
 
 export async function deleteProject(id: string): Promise<void> {
   return api.delete<void>(`/projects/${id}`)
+}
+
+export async function listProjectNotes(projectId: string): Promise<ProjectNoteResponse[]> {
+  return api.get<ProjectNoteResponse[]>(`/projects/${projectId}/notes`)
+}
+
+export async function createProjectNote(projectId: string, content: string): Promise<ProjectNoteResponse> {
+  return api.post<ProjectNoteResponse>(`/projects/${projectId}/notes`, { content })
+}
+
+export async function deleteProjectNote(projectId: string, noteId: string): Promise<void> {
+  return api.delete<void>(`/projects/${projectId}/notes/${noteId}`)
+}
+
+export async function seedIcp(projectId: string, hypothesis: string[]): Promise<IcpResponse> {
+  return api.post<IcpResponse>(`/projects/${projectId}/icp/seed`, { hypothesis })
 }

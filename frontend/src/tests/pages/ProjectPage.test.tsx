@@ -8,6 +8,9 @@ import type { ProjectResponse } from '@/types/api'
 
 vi.mock('@/hooks/useProjects', () => ({
   useProject: vi.fn(),
+  useProjectNotes: vi.fn(() => ({ data: [] })),
+  useCreateProjectNote: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+  useDeleteProjectNote: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
 }))
 vi.mock('@/hooks/useDataSources', () => ({
   useDataSources: vi.fn(),

@@ -7,6 +7,7 @@ Routes:
   PUT    /projects/{project_id}                 - Update project
   PATCH  /projects/{project_id}/archive         - Toggle archive
   DELETE /projects/{project_id}                 - Hard delete
+  POST   /projects/{project_id}/icp/seed        - Seed ICP with intake hypothesis tags
 """
 
 import asyncio
@@ -20,9 +21,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.db import get_db
 from app.models.user import User
+from pydantic import BaseModel
 from app.schemas.icp import IcpResponse
 from app.schemas.persona import PersonaResponse
-from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, QuickViewQuote
+from app.schemas.project import ProjectCreate, ProjectNoteCreate, ProjectNoteResponse, ProjectResponse, ProjectUpdate, QuickViewQuote
 from app.services import (
     analysis_service,
     audit_service,
@@ -185,6 +187,43 @@ async def get_project_icp(
     return IcpResponse.model_validate(icp)
 
 
+# ── POST /projects/{project_id}/icp/seed ─────────────────────────────────────
+
+
+class IcpSeedRequest(BaseModel):
+    hypothesis: list[str]
+
+
+@router.post(
+    "/projects/{project_id}/icp/seed",
+    response_model=IcpResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Seed ICP with intake hypothesis tags",
+)
+async def seed_icp(
+    project_id: uuid.UUID,
+    body: IcpSeedRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> IcpResponse:
+    """Seed an ICP record for an icp-refinement project with hypothesis tags from the
+    intake wizard. Only writes if the ICP does not yet have analysis-generated data
+    (i.e. last_analyzed_at is null), so it never overwrites a real analysis result.
+    """
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    client = await client_service.get_client(db, project.client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+
+    icp = await icp_service.seed_icp_hypothesis(db, project_id, body.hypothesis)
+    await db.commit()
+    await db.refresh(icp)
+    logger.info("Seeded ICP for project %s with %d hypothesis tags", project_id, len(body.hypothesis))
+    return IcpResponse.model_validate(icp)
+
+
 # ── GET /projects/{project_id} ────────────────────────────────────────────────
 
 @router.get(
@@ -320,4 +359,72 @@ async def delete_project(
             {"name": project_name, "client_id": str(client_id)},
         )
     )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ── Project Notes ─────────────────────────────────────────────────────────────
+
+@router.post(
+    "/projects/{project_id}/notes",
+    response_model=ProjectNoteResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a note to a project",
+)
+async def create_project_note(
+    project_id: uuid.UUID,
+    data: ProjectNoteCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ProjectNoteResponse:
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    client = await client_service.get_client(db, project.client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    note = await project_service.create_project_note(db, project_id, data)
+    return ProjectNoteResponse.model_validate(note)
+
+
+@router.get(
+    "/projects/{project_id}/notes",
+    response_model=list[ProjectNoteResponse],
+    summary="List notes for a project",
+)
+async def list_project_notes(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[ProjectNoteResponse]:
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    client = await client_service.get_client(db, project.client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    notes = await project_service.list_project_notes(db, project_id)
+    return [ProjectNoteResponse.model_validate(n) for n in notes]
+
+
+@router.delete(
+    "/projects/{project_id}/notes/{note_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a project note",
+)
+async def delete_project_note(
+    project_id: uuid.UUID,
+    note_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    client = await client_service.get_client(db, project.client_id, current_user.id)
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    note = await project_service.get_project_note(db, note_id, project_id)
+    if not note:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+    await project_service.delete_project_note(db, note)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

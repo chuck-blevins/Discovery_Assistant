@@ -91,3 +91,45 @@ async def upsert_icp(
     db.add(icp)
     await db.flush()
     return icp
+
+
+async def seed_icp_hypothesis(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+    hypothesis: list[str],
+) -> Icp:
+    """Create an ICP record pre-seeded with intake hypothesis tags.
+
+    Unlike upsert_icp, this does NOT set last_analyzed_at, so the record is
+    clearly distinguishable from a real analysis result. If an ICP record
+    already exists with analysis data (last_analyzed_at is set), this is a
+    no-op — it returns the existing record unchanged.
+
+    Caller must commit.
+    """
+    existing = await get_icp_by_project(db, project_id)
+    if existing and existing.last_analyzed_at is not None:
+        return existing  # Don't overwrite analysis results
+
+    now = datetime.now(timezone.utc)
+    tags = [t.strip() for t in hypothesis if t.strip()]
+    custom_text = "\n".join(f"• {t}" for t in tags) if tags else None
+
+    if existing:
+        # Update the seed without touching last_analyzed_at
+        existing.custom = custom_text
+        existing.updated_at = now
+        await db.flush()
+        return existing
+
+    icp = Icp(
+        project_id=project_id,
+        confidence_score=None,
+        custom=custom_text,
+        last_analyzed_at=None,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(icp)
+    await db.flush()
+    return icp

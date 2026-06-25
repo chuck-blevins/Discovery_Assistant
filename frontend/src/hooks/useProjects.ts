@@ -3,8 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   archiveProject,
   createProject,
+  createProjectNote,
   deleteProject,
+  deleteProjectNote,
   getProject,
+  listProjectNotes,
   listProjects,
   updateProject,
 } from '@/api/projects'
@@ -62,5 +65,29 @@ export function useDeleteProject(clientId: string) {
   return useMutation({
     mutationFn: (id: string) => deleteProject(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.projects.all(clientId) }),
+  })
+}
+
+export function useProjectNotes(projectId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.projects.notes(projectId ?? ''),
+    queryFn: () => listProjectNotes(projectId!),
+    enabled: Boolean(projectId),
+  })
+}
+
+export function useCreateProjectNote(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (content: string) => createProjectNote(projectId, content),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.projects.notes(projectId) }),
+  })
+}
+
+export function useDeleteProjectNote(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (noteId: string) => deleteProjectNote(projectId, noteId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.projects.notes(projectId) }),
   })
 }

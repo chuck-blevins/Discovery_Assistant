@@ -7,6 +7,7 @@ export const queryKeys = {
   projects: {
     all: (clientId: string) => ['clients', clientId, 'projects'] as const,
     detail: (id: string) => ['projects', id] as const,
+    notes: (id: string) => ['projects', id, 'notes'] as const,
   },
   analyses: {
     byProject: (projectId: string) => ['projects', projectId, 'analyses'] as const,

@@ -28,7 +28,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { intakeScope } from '@/api/clients'
 import { createClient } from '@/api/clients'
-import { createProject } from '@/api/projects'
+import { createProject, seedIcp } from '@/api/projects'
 import type { IntakeScopeResponse } from '@/api/clients'
 import type { EngagementStatus } from '@/types/api'
 
@@ -164,6 +164,20 @@ export function ClientIntakeWizard({ open, onClose }: ClientIntakeWizardProps) {
         objective: 'onboarding',
         assumed_problem: discoveryQuestions || undefined,
       })
+
+      // If intake generated ICP hypothesis tags, create an ICP project pre-seeded
+      const hypothesis = aiDraft?.icp_hypothesis ?? []
+      if (hypothesis.length > 0) {
+        try {
+          const icpProject = await createProject(clientId, {
+            name: 'ICP Research',
+            objective: 'icp-refinement',
+          })
+          await seedIcp(icpProject.id, hypothesis)
+        } catch {
+          // Non-fatal: ICP project creation is best-effort
+        }
+      }
 
       queryClient.invalidateQueries({ queryKey: ['clients'] })
       handleClose()
@@ -386,6 +400,12 @@ export function ClientIntakeWizard({ open, onClose }: ClientIntakeWizardProps) {
                 <span className="font-medium">Project: </span>
                 Discovery (onboarding)
               </div>
+              {(aiDraft?.icp_hypothesis?.length ?? 0) > 0 && (
+                <div>
+                  <span className="font-medium">Also creating: </span>
+                  ICP Research (icp-refinement) — pre-seeded with {aiDraft!.icp_hypothesis.length} hypothesis tag{aiDraft!.icp_hypothesis.length !== 1 ? 's' : ''}
+                </div>
+              )}
             </div>
 
             {confirmError && (
