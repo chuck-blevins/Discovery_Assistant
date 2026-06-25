@@ -1,22 +1,24 @@
 # Nexlayer deployment manifest — four pods on one public domain.
 #
 # Topology:
-#   frontend (path /)  — nginx serving the production SPA build
+#   frontend (path /)   — nginx serving the production SPA build (VITE_API_URL baked to /api)
 #   backend  (path /api) — FastAPI; same origin as the frontend, so NO CORS needed
 #   postgres — database (persistent volume)
 #   minio    — S3-compatible object storage (persistent volume); the backend
-#              requires this for file uploads (see app/services/storage_service.py)
+#              uses this for file uploads but boots fine if it is unavailable
+#              (see app/services/storage_service.py + lifespan in app/main.py)
 #
-# Nexlayer conventions:
-#   - App images (frontend/backend) are built by Nexlayer's pipeline from each
-#     service's Dockerfile and patched in where you see "# filled by pipeline".
+# Conventions verified against the Nexlayer MCP (2026-06-25):
+#   - App/frontend/backend images are built from each service's Dockerfile and
+#     pushed to registry.nexlayer.io via nexlayer_build_and_push_image. Tag = git SHA.
 #   - Third-party images use the mirror.gcr.io mirror to avoid Docker Hub rate limits.
-#   - Inter-pod references use ${podName:port} (resolves to that pod's host:port).
-#     If a deploy can't resolve these, the documented alternative form is
-#     <podName>.pod:<port> (see nexlayer.skills) — swap if needed.
-#   - SECRET_KEY, CLAUDE_API_KEY, and STORAGE_SECRET_KEY should be set as encrypted
-#     vars in the Nexlayer dashboard, NOT committed here. The internal postgres/minio
-#     credentials below are cluster-internal only.
+#   - Inter-pod references use <podName>.pod:<port> (the MCP-documented form).
+#   - DATABASE_URL MUST use the postgresql+asyncpg:// scheme: alembic/env.py builds an
+#     async engine (async_engine_from_config) and only asyncpg is installed. Plain
+#     postgresql:// makes `alembic upgrade head` fail in an infinite retry loop, which
+#     is what left the previous deploy returning 503.
+#   - SECRET_KEY / STORAGE creds below are deploy-time defaults; rotate sensitive values
+#     (SECRET_KEY, CLAUDE_API_KEY) as encrypted vars in the Nexlayer dashboard.
 application:
   name: discovery-app
   pods:
@@ -28,14 +30,17 @@ application:
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
         POSTGRES_DB: discovery_app
+        PGDATA: /var/lib/postgresql/data/pgdata
       volumes:
         - name: pg-data
           size: 2Gi
-          mountPath: /var/lib/postgresql/data
+          mountPath: /var/lib/postgresql
 
     - name: minio
-      image: mirror.gcr.io/minio/minio:latest
-      command: ["server", "/data", "--console-address", ":9001"]
+      # Custom image with the `server /data` start command baked into CMD
+      # (see deploy/minio/Dockerfile). Nexlayer's deploy API rejects a top-level
+      # `command:` field, so the start args must live inside the image.
+      image: registry.nexlayer.io/user_01krc13rb1z2ng6b0bdm6h6wab/discovery-app-minio:v1
       servicePorts:
         - 9000
         - 9001
@@ -48,20 +53,22 @@ application:
           mountPath: /data
 
     - name: backend
-      image: "# filled by pipeline:backend"
+      image: registry.nexlayer.io/user_01krc13rb1z2ng6b0bdm6h6wab/discovery-app-backend:1a6a492
       path: /api
       servicePorts:
         - 8000
       vars:
-        DATABASE_URL: postgresql://postgres:postgres@${postgres:5432}/discovery_app
-        STORAGE_ENDPOINT_URL: http://${minio:9000}
+        DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres.pod:5432/discovery_app
+        SECRET_KEY: xhm7YX1_jYrUKzhCOWU6fkAdaJ4ubFpb2CZgk0mtD7Pfl3qgG1B1x-guCBiA4Tu_
+        ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+        STORAGE_ENDPOINT_URL: http://minio.pod:9000
         STORAGE_BUCKET_NAME: discovery-files
         STORAGE_ACCESS_KEY: minioadmin
         STORAGE_SECRET_KEY: minioadmin
-        # SECRET_KEY and CLAUDE_API_KEY: set as encrypted vars in the Nexlayer dashboard.
+        # CLAUDE_API_KEY: set as an encrypted var in the Nexlayer dashboard (required for analysis features).
 
     - name: frontend
-      image: "# filled by pipeline:frontend"
+      image: registry.nexlayer.io/user_01krc13rb1z2ng6b0bdm6h6wab/discovery-app-frontend:1a6a492
       path: /
       servicePorts:
         - 80

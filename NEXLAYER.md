@@ -178,10 +178,28 @@ application:
 
 ## Nexlayer Configuration
 <!-- nexlayer:section agent-managed=nexlayer_config -->
-**Last deployed:** 2026-06-24T17:33:56Z  
-**Live URL:** https://flamboyant-goshawk-fine-peak-discovery-assistant.cloud.nexlayer.ai  
-**Runtime:** multi · **Port:** 8000  
-**Deploy branch:** main  
+**Last deployed:** 2026-06-25 (via Nexlayer MCP)  
+**Live URL:** https://flamboyant-goshawk-discovery-app.cloud.nexlayer.ai  
+**App name:** discovery-app · **Namespace:** flamboyant-goshawk  
+**Backend/frontend image tag:** git SHA `1a6a492` · **minio image:** `discovery-app-minio:v1`  
+**Runtime:** multi · **Port:** 8000 · **Deploy branch:** main  
+
+> All four pods (`postgres`, `minio`, `backend` /api, `frontend` /) are Running 1/1.
+> Verified end-to-end: `/api/health` 200, alembic migrations applied, and the backend
+> connects to MinIO (boto3 lists the auto-created `discovery-files` bucket).
+>
+> Two gotchas solved during this deploy:
+> 1. **503 root cause:** the prior config used a plain `postgresql://` DATABASE_URL,
+>    but `alembic/env.py` builds an async engine and only `asyncpg` is installed, so
+>    `alembic upgrade head` looped forever and the pod never came up. Fixed by using
+>    `postgresql+asyncpg://`.
+> 2. **MinIO needs a start command** (`server /data`), but the Nexlayer deploy API
+>    rejects a top-level `command:` field (HTTP 500) even though the validator accepts
+>    it. Worked around by baking the command into a custom image
+>    (`deploy/minio/Dockerfile`) so no `command:` field is needed.
+>
+> Nexlayer rewrites `<pod>.pod:<port>` env refs into the full in-cluster service FQDN
+> at deploy time, so `STORAGE_ENDPOINT_URL: http://minio.pod:9000` resolves correctly.
 
 ```yaml
 application:
@@ -230,5 +248,7 @@ application:
 | Date | Status | Notes |
 |------|--------|-------|
 | 2026-06-24T17:25:25Z | analyzed | initial repo analysis |
-| 2026-06-24T17:33:56Z | success | deployed https://flamboyant-goshawk-fine-peak-discovery-assistant.cloud.nexlayer.ai |
+| 2026-06-24T17:33:56Z | success | deployed (fine-peak-discovery_assistant) — later 503 (DATABASE_URL driver mismatch) |
+| 2026-06-25 | success | redeployed via MCP as `discovery-app` — fixed +asyncpg DATABASE_URL; LIVE 200 (3 pods) |
+| 2026-06-25 | success | added `minio` (custom CMD-baked image) — full 4-pod stack, bucket verified |
 <!-- nexlayer:end -->
